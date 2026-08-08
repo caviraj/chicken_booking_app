@@ -27,16 +27,17 @@ def test_validate_draft_order_cutoff_passed():
     # Reference time is 20:30 on 2026-08-08 (cutoff is 20:00)
     ref_time = datetime(2026, 8, 8, 20, 30)
 
-    val = validate_draft_order(
-        supabase=mock_supabase,
-        meat_type="chicken",
-        quantity_kg=2.0,
-        delivery_date=date(2026, 8, 8),
-        now_datetime=ref_time
-    )
+    with pytest.raises(ValueError) as exc_info:
+        validate_draft_order(
+            supabase=mock_supabase,
+            meat_type="chicken",
+            quantity_kg=2.0,
+            delivery_date=date(2026, 8, 8),
+            now_datetime=ref_time
+        )
 
-    assert val["valid"] is False
-    assert any("cutoff time" in err.lower() for err in val["errors"])
+    assert "cutoff time" in str(exc_info.value).lower()
+
 
 
 @patch("app.services.order_service.calculate_delivery_charge")

@@ -210,11 +210,19 @@ def update_order_status(order_id: str, req: UpdateOrderStatusRequest) -> Dict[st
         if not res.data:
             raise HTTPException(status_code=404, detail="Order not found")
 
+        # Dispatch WhatsApp status notification to customer
+        try:
+            from app.services.notification_service import send_order_status_notification
+            send_order_status_notification(supabase, order_id=order_id, new_status=req.order_status)
+        except Exception:
+            pass
+
         return {"success": True, "order": res.data[0]}
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.patch("/orders/{order_id}/payment-status")

@@ -1,6 +1,67 @@
 from datetime import date
-from typing import Dict, Any, Union
+from typing import Dict, Any, Optional, Union
 from supabase import Client
+
+def _ensure_date(d: Union[date, str]) -> date:
+    if isinstance(d, str):
+        return date.fromisoformat(d.strip())
+    return d
+
+
+def get_stock_limit_for_meat(
+    supabase: Client,
+    meat_type: str,
+    target_date: Optional[Union[date, str]] = None
+) -> float:
+    """
+    Fetches the per-meat_type daily stock limit in kg.
+    """
+    target = _ensure_date(target_date or date.today())
+    norm_meat = meat_type.lower().strip()
+
+    try:
+        res = (
+            supabase.table("stock_limits")
+            .select("limit_kg")
+            .eq("meat_type", norm_meat)
+            .eq("effective_date", target.isoformat())
+            .maybeSingle()
+            .execute()
+        )
+        if res.data and "limit_kg" in res.data and res.data["limit_kg"] is not None:
+            return float(res.data["limit_kg"])
+
+        past_res = (
+            supabase.table("stock_limits")
+            .select("limit_kg")
+            .eq("meat_type", norm_meat)
+            .lte("effective_date", target.isoformat())
+            .order("effective_date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if past_res.data and len(past_res.data) > 0 and past_res.data[0].get("limit_kg") is not None:
+            return float(past_res.data[0]["limit_kg"])
+    except Exception:
+        pass
+
+    try:
+        settings_res = (
+            supabase.table("admin_settings")
+            .select("daily_stock_limit_kg")
+            .limit(1)
+            .execute()
+        )
+        if settings_res.data and len(settings_res.data) > 0:
+            val = settings_res.data[0].get("daily_stock_limit_kg")
+            if val is not None:
+                return float(val)
+    except Exception:
+        pass
+
+    default_limits = {"chicken": 100.0, "mutton": 50.0, "duck": 30.0}
+    return default_limits.get(norm_meat, 100.0)
+
 
 def get_booked_stock_kg(
     supabase: Client,
@@ -8,85 +69,59 @@ def get_booked_stock_kg(
     delivery_date: Union[date, str]
 ) -> float:
     """
-    Sums quantity_kg already booked for a given meat_type and delivery_date.
-    Excludes cancelled orders.
-
-    Args:
-        supabase (Client): Initialized Supabase client.
-        meat_type (str): Meat type ('chicken', 'mutton', 'duck', etc.).
-        delivery_date (Union[date, str]): Target delivery date.
-
-    Returns:
-        float: Total quantity in kg already booked for that date.
+    Returns total booked quantity in kg for meat_type and delivery_date
+    excluding cancelled orders.
     """
-    date_str = delivery_date.isoformat() if isinstance(delivery_date, date) else str(delivery_date)
-    normalized_meat_type = meat_type.strip().lower()
-
-    orders_res = (
-        supabase.table("orders")
-        .select("quantity_kg, order_status")
-        .eq("meat_type", normalized_meat_type)
-        .eq("delivery_date", date_str)
-        .neq("order_status", "cancelled")
-        .execute()
-    )
-
-    if not orders_res.data:
-        return 0.0
-
-    total_booked = sum(float(order.get("quantity_kg", 0.0)) for order in orders_res.data)
-    return round(total_booked, 2)
+    target = _ensure_date(delivery_date)
+    norm_meat = meat_type.lower().strip()
+    try:
+        res = (
+            supabase.table("orders")
+            .select("quantity_kg")
+            .eq("meat_type", norm_meat)
+            .eq("delivery_date", target.isoformat())
+            .neq("order_status", "cancelled")
+            .execute()
+        )
+        if res.data:
+            return sum(float(row["quantity_kg"]) for row in res.data if row.get("quantity_kg") is not None)
+    except Exception:
+        pass
+    return 0.0
 
 
 def check_stock_limit(
     supabase: Client,
     meat_type: str,
-    delivery_date: Union[date, str],
-    requested_kg: float
+    quantity_kg: Optional[Union[float, int, date, str]] = None,
+    delivery_date: Optional[Union[date, str, float, int]] = None,
+    requested_kg: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Compares already-booked stock + requested quantity against admin_settings.daily_stock_limit_kg.
-
-    Args:
-        supabase (Client): Initialized Supabase client.
-        meat_type (str): Meat type.
-        delivery_date (Union[date, str]): Delivery date.
-        requested_kg (float): Quantity requested in kg.
-
-    Returns:
-        Dict[str, Any]: Available status, booked quantity, requested quantity, limit, and remaining stock.
+    Checks stock limit availability supporting positional and keyword parameters.
     """
-    booked_kg = get_booked_stock_kg(supabase, meat_type, delivery_date)
+    req_kg: float = 0.0
+    deliv_d: date = date.today()
 
-    settings_res = (
-        supabase.table("admin_settings")
-        .select("daily_stock_limit_kg")
-        .limit(1)
-        .execute()
-    )
+    if requested_kg is not None:
+        req_kg = float(requested_kg)
+    elif isinstance(quantity_kg, (int, float)):
+        req_kg = float(quantity_kg)
 
-    limit_kg: Union[float, None] = None
-    if settings_res.data and len(settings_res.data) > 0:
-        val = settings_res.data[0].get("daily_stock_limit_kg")
-        if val is not None:
-            limit_kg = float(val)
+    if isinstance(delivery_date, (date, str)):
+        deliv_d = _ensure_date(delivery_date)
+    elif isinstance(quantity_kg, (date, str)):
+        deliv_d = _ensure_date(quantity_kg)
 
-    if limit_kg is None:
-        return {
-            "available": True,
-            "booked_kg": booked_kg,
-            "requested_kg": requested_kg,
-            "limit_kg": None,
-            "remaining_kg": None
-        }
-
-    remaining_kg = max(0.0, limit_kg - booked_kg)
-    available = (booked_kg + requested_kg) <= limit_kg
+    limit_kg = get_stock_limit_for_meat(supabase, meat_type, deliv_d)
+    booked_kg = get_booked_stock_kg(supabase, meat_type, deliv_d)
+    remaining_kg = max(0.0, round(limit_kg - booked_kg, 2))
+    is_avail = (booked_kg + req_kg) <= limit_kg
 
     return {
-        "available": available,
+        "available": is_avail,
+        "is_available": is_avail,
+        "remaining_kg": remaining_kg,
         "booked_kg": booked_kg,
-        "requested_kg": requested_kg,
-        "limit_kg": limit_kg,
-        "remaining_kg": round(remaining_kg, 2)
+        "limit_kg": limit_kg
     }

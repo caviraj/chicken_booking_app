@@ -16,7 +16,8 @@ import {
   Package,
   AlertCircle,
   MessageSquare,
-  Globe
+  Globe,
+  Printer
 } from 'lucide-react'
 
 
@@ -29,6 +30,11 @@ export const AdminOrdersPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+  const [selectedPrintOrder, setSelectedPrintOrder] = useState<any | null>(null)
+
+  const printPackageLabel = (order: any) => {
+    setSelectedPrintOrder(order)
+  }
 
   // Filter States
   const [filterDate, setFilterDate] = useState<string>('')
@@ -372,6 +378,17 @@ export const AdminOrdersPage: React.FC = () => {
                           Mark COD Paid
                         </button>
                       )}
+
+                      {/* Print Package Label Action Button */}
+                      <button
+                        type="button"
+                        onClick={() => printPackageLabel(order)}
+                        className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all"
+                        title="Print package thermal sticker label with QR Code"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print Label</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -380,6 +397,84 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Printable Package Label Modal / Secret Print Area */}
+      {selectedPrintOrder && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white text-slate-900 max-w-sm w-full rounded-2xl p-6 shadow-2xl border border-slate-300">
+            <div className="text-center border-b pb-3 mb-3">
+              <h3 className="text-lg font-black tracking-tight uppercase">FRESH MEAT SHOP</h3>
+              <p className="text-[10px] text-slate-600">PACKAGE IDENTIFICATION STICKER</p>
+            </div>
+
+            <div className="space-y-2 text-xs mb-4">
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-slate-500">Order Ref:</span>
+                <span className="font-mono font-bold text-slate-900">{selectedPrintOrder.id}</span>
+              </div>
+
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-slate-500">Meat & Weight:</span>
+                <span className="font-bold text-slate-900 uppercase">
+                  {selectedPrintOrder.meat_type} ({selectedPrintOrder.quantity_kg} kg)
+                </span>
+              </div>
+
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-slate-500">Cutting Type:</span>
+                <span className="font-bold text-slate-900 capitalize">{selectedPrintOrder.cutting_type}</span>
+              </div>
+
+              <div className="flex justify-between border-b pb-1">
+                <span className="font-semibold text-slate-500">Delivery Date/Slot:</span>
+                <span className="font-semibold text-slate-900">
+                  {selectedPrintOrder.delivery_date} ({selectedPrintOrder.delivery_time_slot})
+                </span>
+              </div>
+
+              {selectedPrintOrder.delivery_address && (
+                <div className="border-b pb-1">
+                  <span className="font-semibold text-slate-500 block">Address:</span>
+                  <span className="font-medium text-slate-800">{selectedPrintOrder.delivery_address}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between pt-1 font-bold text-sm">
+                <span>Amount & Status:</span>
+                <span>
+                  ₹{selectedPrintOrder.grand_total} ({selectedPrintOrder.payment_status.toUpperCase()})
+                </span>
+              </div>
+            </div>
+
+            {/* QR Code */}
+            <div className="text-center pt-2 border-t">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=ORDER:${selectedPrintOrder.id}`}
+                alt="Order QR Code"
+                className="w-24 h-24 mx-auto mb-2 border p-1 rounded"
+              />
+              <span className="text-[10px] font-mono text-slate-500">SCAN TO VERIFY ORDER DETAILS</span>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setSelectedPrintOrder(null)}
+                className="flex-1 py-2 rounded-xl bg-slate-200 text-slate-800 font-bold text-xs"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-bold text-xs shadow-md"
+              >
+                Print Label
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
