@@ -349,9 +349,33 @@ def handle_whatsapp_message(
             # Reset conversation state
             update_conversation_state(supabase, sender_phone, "START", {})
 
-            success_msg = f"🎉 *ORDER CONFIRMED!*\nOrder ID: {created_order['id']}\nGrand Total: ₹{created_order['grand_total']}\nThank you for ordering with us!"
+            payment_link = created_order.get("razorpay_payment_link")
+            if draft["payment_method"] == "online" and payment_link:
+                success_msg = (
+                    f"🎉 *ORDER CREATED!*\n"
+                    f"Order ID: `{created_order['id']}`\n"
+                    f"Grand Total: ₹{created_order['grand_total']}\n\n"
+                    f"🔗 *Complete your payment via Razorpay*:\n{payment_link}\n\n"
+                    f"Your order will be processed once payment is confirmed!"
+                )
+            elif draft["payment_method"] == "online":
+                success_msg = (
+                    f"🎉 *ORDER CREATED!*\n"
+                    f"Order ID: `{created_order['id']}`\n"
+                    f"Grand Total: ₹{created_order['grand_total']}\n\n"
+                    f"Please complete payment to confirm your booking."
+                )
+            else:
+                success_msg = (
+                    f"🎉 *ORDER CONFIRMED (COD)!*\n"
+                    f"Order ID: `{created_order['id']}`\n"
+                    f"Grand Total: ₹{created_order['grand_total']}\n\n"
+                    f"Please pay cash upon delivery. Thank you!"
+                )
+
             send_whatsapp_text(sender_phone, success_msg)
             return {"status": "ok", "step": "CONFIRM_YES", "order": created_order}
+
         else:
             update_conversation_state(supabase, sender_phone, "START", {})
             send_whatsapp_text(sender_phone, "Order cancelled. Type 'hi' to start a new booking anytime!")

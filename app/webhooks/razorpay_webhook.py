@@ -71,11 +71,12 @@ async def handle_razorpay_webhook(
     # 2. Idempotency Check: Fetch order record from DB
     order_res = (
         supabase.table("orders")
-        .select("id, payment_status, razorpay_payment_id")
+        .select("id, customer_id, payment_status, razorpay_payment_id")
         .eq("id", order_id)
         .maybeSingle()
         .execute()
     )
+
 
     if not order_res.data:
         return {"status": "ignored", "reason": f"Order {order_id} not found"}
@@ -93,7 +94,25 @@ async def handle_razorpay_webhook(
             "razorpay_payment_id": razorpay_payment_id
         }).eq("id", order_id).execute()
 
+        # Send WhatsApp confirmation notification to customer
+        try:
+            from app.services.whatsapp_client import send_whatsapp_text
+            cust_res = (
+                supabase.table("customers")
+                .select("phone_number")
+                .eq("id", order.get("customer_id", ""))
+                .maybeSingle()
+                .execute()
+            )
+            cust_phone = cust_res.data.get("phone_number") if cust_res and cust_res.data else None
+            if cust_phone:
+                msg = f"✅ *Payment Received!*\nWe received payment for Order #{order_id}.\nThank you for choosing Fresh Meat Booking!"
+                send_whatsapp_text(cust_phone, msg)
+        except Exception:
+            pass
+
         return {"status": "success", "event": "payment.captured", "order_id": order_id}
+
 
     elif event_type == "payment.failed":
         supabase.table("orders").update({
