@@ -1,126 +1,113 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Query, Header
 from pydantic import BaseModel, Field
 
 from app.core.supabase import get_supabase_client
 
-router = APIRouter(prefix="/api/admin", tags=["Admin"])
+router = APIRouter(prefix="/api/admin", tags=["Admin API"])
 
-# Pydantic Request Models
-class SetRateRequest(BaseModel):
-    meat_type: str = Field(..., description="chicken, mutton, duck")
+# Pydantic Schemas
+class VerifyAdminRequest(BaseModel):
+    email: str
+
+class UpdateRateRequest(BaseModel):
+    admin_email: str
+    meat_type: str
     rate_per_kg: float = Field(..., gt=0)
-    effective_date: Optional[date] = Field(None)
-    admin_email: str = Field(..., description="Email of admin user performing write")
+    effective_date: Optional[date] = None
 
 class UpdateSettingsRequest(BaseModel):
-    admin_email: str = Field(...)
-    cod_enabled: Optional[bool] = True
-    order_cutoff_time: Optional[str] = "20:00"
-    daily_stock_limit_kg: Optional[float] = None
-    shop_lat: Optional[float] = None
-    shop_lng: Optional[float] = None
-    delivery_enabled_days: Optional[List[str]] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
-    cleaning_day: Optional[bool] = False
+    admin_email: str
+    order_cutoff_time: str = Field("20:00")
+    daily_stock_limit_kg: float = Field(100.0, gt=0)
+    shop_latitude: float
+    shop_longitude: float
+    is_cleaning_day: bool = False
+
+class UpdateOrderStatusRequest(BaseModel):
+    admin_email: str
+    order_status: str
+
+class UpdatePaymentStatusRequest(BaseModel):
+    admin_email: str
+    payment_status: str
+
+class DeliveryZoneRequest(BaseModel):
+    admin_email: str
+    zone_name: str
+    max_distance_km: float = Field(..., gt=0)
+    delivery_charge: float = Field(..., ge=0)
+    is_active: bool = True
 
 
-def check_is_admin(email: str, supabase) -> bool:
-    """Verifies if the given email is registered in public.admin_users."""
+def check_is_admin(supabase, email: str):
+    """Helper function to verify if email exists in admin_users table."""
     if not email:
-        return False
+        raise HTTPException(status_code=401, detail="Admin authorization email is required.")
+    
     res = (
         supabase.table("admin_users")
-        .select("id")
+        .select("id, email, role")
         .eq("email", email.strip().lower())
+        .maybeSingle()
         .execute()
     )
-    return bool(res.data and len(res.data) > 0)
+    if not res.data:
+        raise HTTPException(status_code=403, detail="Access denied. Email is not an authorized admin.")
+    return res.data
 
 
-@router.get("/verify")
-def verify_admin_status(email: str) -> Dict[str, Any]:
-    """
-    Checks if a given email belongs to an authorized admin_user.
-    """
+@router.post("/verify")
+def verify_admin_status(req: VerifyAdminRequest) -> Dict[str, Any]:
+    """Verifies whether an email belongs to an authorized admin."""
     try:
         supabase = get_supabase_client()
-        is_admin = check_is_admin(email, supabase)
-        return {"is_admin": is_admin, "email": email}
-    except Exception:
-        # Fallback for local testing if env variables are not set
-        return {"is_admin": True, "email": email}
+        admin_data = check_is_admin(supabase, req.email)
+        return {"is_admin": True, "admin": admin_data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/rates")
-def get_rate_history() -> Dict[str, Any]:
-    """
-    Returns historical rate records from rates table.
-    """
+def get_rates_history(
+    meat_type: Optional[str] = Query(None)
+) -> Dict[str, Any]:
+    """Fetches full rates history from rates table."""
     try:
         supabase = get_supabase_client()
-        res = (
-            supabase.table("rates")
-            .select("*")
-            .order("effective_date", desc=True)
-            .execute()
-        )
+        query = supabase.table("rates").select("*").order("effective_date", desc=True)
+        if meat_type:
+            query = query.eq("meat_type", meat_type.lower())
+        res = query.execute()
         return {"rates": res.data or []}
-    except Exception:
-        # Fallback sample data if Supabase connection is not initialized
-        return {
-            "rates": [
-                {"id": "r-1", "meat_type": "chicken", "rate_per_kg": 240.0, "effective_date": date.today().isoformat()},
-                {"id": "r-2", "meat_type": "mutton", "rate_per_kg": 750.0, "effective_date": date.today().isoformat()},
-                {"id": "r-3", "meat_type": "duck", "rate_per_kg": 380.0, "effective_date": date.today().isoformat()}
-            ]
-        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/rates")
-def set_meat_rate(req: SetRateRequest) -> Dict[str, Any]:
-    """
-    Inserts or updates a meat rate for a specific effective date. Restricts to admin users.
-    """
+def update_meat_rate(req: UpdateRateRequest) -> Dict[str, Any]:
+    """Inserts a new daily rate for a meat type into rates table."""
     try:
         supabase = get_supabase_client()
-        if not check_is_admin(req.admin_email, supabase):
-            raise HTTPException(status_code=403, detail="Unauthorized. User email is not in admin_users table.")
+        check_is_admin(supabase, req.admin_email)
 
-        target_date = req.effective_date or date.today()
-        normalized_meat = req.meat_type.strip().lower()
-
-        # Check if record exists for meat_type + effective_date
-        existing = (
-            supabase.table("rates")
-            .select("id")
-            .eq("meat_type", normalized_meat)
-            .eq("effective_date", target_date.isoformat())
-            .execute()
-        )
+        eff_date = req.effective_date or date.today()
 
         payload = {
-            "meat_type": normalized_meat,
+            "meat_type": req.meat_type.lower(),
             "rate_per_kg": req.rate_per_kg,
-            "effective_date": target_date.isoformat()
+            "effective_date": eff_date.isoformat(),
+            "created_by": req.admin_email.strip().lower()
         }
 
-        if existing.data and len(existing.data) > 0:
-            rate_id = existing.data[0]["id"]
-            res = (
-                supabase.table("rates")
-                .update(payload)
-                .eq("id", rate_id)
-                .execute()
-            )
-        else:
-            res = (
-                supabase.table("rates")
-                .insert(payload)
-                .execute()
-            )
+        res = supabase.table("rates").insert(payload).execute()
+        if not res.data:
+            raise RuntimeError("Failed to insert new rate")
 
-        return {"success": True, "record": res.data[0] if res.data else payload}
+        return {"success": True, "rate": res.data[0]}
     except HTTPException:
         raise
     except Exception as e:
@@ -128,89 +115,201 @@ def set_meat_rate(req: SetRateRequest) -> Dict[str, Any]:
 
 
 @router.get("/settings")
-def get_settings() -> Dict[str, Any]:
-    """
-    Fetches admin settings record from admin_settings table.
-    """
+def get_admin_settings() -> Dict[str, Any]:
+    """Fetches operational admin settings."""
     try:
         supabase = get_supabase_client()
-        res = (
-            supabase.table("admin_settings")
-            .select("*")
-            .limit(1)
-            .execute()
-        )
+        res = supabase.table("admin_settings").select("*").limit(1).execute()
         if res.data and len(res.data) > 0:
             return {"settings": res.data[0]}
         
-        # Default settings if table is empty
         default_settings = {
-            "cod_enabled": True,
             "order_cutoff_time": "20:00",
             "daily_stock_limit_kg": 100.0,
-            "shop_lat": 13.0827,
-            "shop_lng": 80.2707,
-            "delivery_enabled_days": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
-            "cleaning_day": False
+            "shop_latitude": 13.0827,
+            "shop_longitude": 80.2707,
+            "is_cleaning_day": False
         }
         return {"settings": default_settings}
-    except Exception:
-        return {
-            "settings": {
-                "cod_enabled": True,
-                "order_cutoff_time": "20:00",
-                "daily_stock_limit_kg": 100.0,
-                "shop_lat": 13.0827,
-                "shop_lng": 80.2707,
-                "delivery_enabled_days": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
-                "cleaning_day": False
-            }
-        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/settings")
-def update_settings(req: UpdateSettingsRequest) -> Dict[str, Any]:
-    """
-    Updates operational settings in admin_settings table. Restricts to admin users.
-    """
+def update_admin_settings(req: UpdateSettingsRequest) -> Dict[str, Any]:
+    """Updates global shop settings."""
     try:
         supabase = get_supabase_client()
-        if not check_is_admin(req.admin_email, supabase):
-            raise HTTPException(status_code=403, detail="Unauthorized. User email is not in admin_users table.")
+        check_is_admin(supabase, req.admin_email)
 
+        existing = supabase.table("admin_settings").select("id").limit(1).execute()
         payload = {
-            "cod_enabled": req.cod_enabled,
             "order_cutoff_time": req.order_cutoff_time,
             "daily_stock_limit_kg": req.daily_stock_limit_kg,
-            "shop_lat": req.shop_lat,
-            "shop_lng": req.shop_lng,
-            "delivery_enabled_days": req.delivery_enabled_days,
-            "cleaning_day": req.cleaning_day
+            "shop_latitude": req.shop_latitude,
+            "shop_longitude": req.shop_longitude,
+            "is_cleaning_day": req.is_cleaning_day,
+            "updated_at": datetime.now().isoformat()
         }
 
-        existing = (
-            supabase.table("admin_settings")
-            .select("id")
-            .limit(1)
+        if existing.data and len(existing.data) > 0:
+            rec_id = existing.data[0]["id"]
+            res = supabase.table("admin_settings").update(payload).eq("id", rec_id).execute()
+        else:
+            res = supabase.table("admin_settings").insert(payload).execute()
+
+        return {"success": True, "settings": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Phase 11: Orders Management Endpoints ---
+
+@router.get("/orders")
+def get_admin_orders(
+    delivery_date: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
+    order_status: Optional[str] = Query(None),
+    payment_method: Optional[str] = Query(None)
+) -> Dict[str, Any]:
+    """Fetches all orders with optional filter query parameters."""
+    try:
+        supabase = get_supabase_client()
+        query = supabase.table("orders").select("*").order("created_at", desc=True)
+
+        if delivery_date:
+            query = query.eq("delivery_date", delivery_date)
+        if source:
+            query = query.eq("source", source.lower())
+        if order_status:
+            query = query.eq("order_status", order_status.lower())
+        if payment_method:
+            query = query.eq("payment_method", payment_method.lower())
+
+        res = query.execute()
+        return {"orders": res.data or []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/orders/{order_id}/status")
+def update_order_status(order_id: str, req: UpdateOrderStatusRequest) -> Dict[str, Any]:
+    """Updates order status e.g. confirmed -> preparing -> out_for_delivery -> delivered."""
+    try:
+        supabase = get_supabase_client()
+        check_is_admin(supabase, req.admin_email)
+
+        res = (
+            supabase.table("orders")
+            .update({"order_status": req.order_status.lower()})
+            .eq("id", order_id)
             .execute()
         )
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Order not found")
 
-        if existing.data and len(existing.data) > 0:
-            setting_id = existing.data[0]["id"]
-            res = (
-                supabase.table("admin_settings")
-                .update(payload)
-                .eq("id", setting_id)
-                .execute()
-            )
-        else:
-            res = (
-                supabase.table("admin_settings")
-                .insert(payload)
-                .execute()
-            )
+        return {"success": True, "order": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        return {"success": True, "settings": res.data[0] if res.data else payload}
+
+@router.patch("/orders/{order_id}/payment-status")
+def update_order_payment_status(order_id: str, req: UpdatePaymentStatusRequest) -> Dict[str, Any]:
+    """Updates payment status e.g. mark COD as paid."""
+    try:
+        supabase = get_supabase_client()
+        check_is_admin(supabase, req.admin_email)
+
+        res = (
+            supabase.table("orders")
+            .update({"payment_status": req.payment_status.lower()})
+            .eq("id", order_id)
+            .execute()
+        )
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        return {"success": True, "order": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Phase 11: Delivery Zones CRUD Endpoints ---
+
+@router.get("/delivery-zones")
+def get_admin_delivery_zones() -> Dict[str, Any]:
+    """Fetches all delivery zones ordered by max_distance_km ASC."""
+    try:
+        supabase = get_supabase_client()
+        res = supabase.table("delivery_zones").select("*").order("max_distance_km", desc=False).execute()
+        return {"zones": res.data or []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/delivery-zones")
+def create_delivery_zone(req: DeliveryZoneRequest) -> Dict[str, Any]:
+    """Creates a new delivery zone band."""
+    try:
+        supabase = get_supabase_client()
+        check_is_admin(supabase, req.admin_email)
+
+        payload = {
+            "zone_name": req.zone_name.strip(),
+            "max_distance_km": req.max_distance_km,
+            "delivery_charge": req.delivery_charge,
+            "is_active": req.is_active
+        }
+        res = supabase.table("delivery_zones").insert(payload).execute()
+        if not res.data:
+            raise RuntimeError("Failed to insert delivery zone")
+
+        return {"success": True, "zone": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/delivery-zones/{zone_id}")
+def update_delivery_zone(zone_id: str, req: DeliveryZoneRequest) -> Dict[str, Any]:
+    """Updates an existing delivery zone band."""
+    try:
+        supabase = get_supabase_client()
+        check_is_admin(supabase, req.admin_email)
+
+        payload = {
+            "zone_name": req.zone_name.strip(),
+            "max_distance_km": req.max_distance_km,
+            "delivery_charge": req.delivery_charge,
+            "is_active": req.is_active
+        }
+        res = supabase.table("delivery_zones").update(payload).eq("id", zone_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Delivery zone not found")
+
+        return {"success": True, "zone": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/delivery-zones/{zone_id}")
+def delete_delivery_zone(zone_id: str, admin_email: str = Query(...)) -> Dict[str, Any]:
+    """Deletes a delivery zone band."""
+    try:
+        supabase = get_supabase_client()
+        check_is_admin(supabase, admin_email)
+
+        res = supabase.table("delivery_zones").delete().eq("id", zone_id).execute()
+        return {"success": True, "deleted_id": zone_id}
     except HTTPException:
         raise
     except Exception as e:

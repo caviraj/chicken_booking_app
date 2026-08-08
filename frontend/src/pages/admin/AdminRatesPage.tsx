@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Header } from '../../components/Header'
 import { fetchAdminRateHistory, updateMeatRate } from '../../api/adminApi'
 import type { RateHistoryItem } from '../../api/adminApi'
 
-import { Tag, Save, History, Settings as SettingsIcon, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Tag, Save, History, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react'
+
 
 export const AdminRatesPage: React.FC = () => {
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
 
   // Form states for today's rates
   const [chickenRate, setChickenRate] = useState<string>('240')
@@ -81,21 +83,38 @@ export const AdminRatesPage: React.FC = () => {
             <p className="text-xs text-slate-400 mt-1">Configure per-kg prices for Chicken, Mutton, and Duck</p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to="/admin/rates"
-              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20"
+          <nav className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/admin/rates')}
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 transition-all"
             >
-              Rates Page
-            </Link>
-            <Link
-              to="/admin/settings"
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-xs border border-slate-800 flex items-center gap-1.5 transition-all"
+              Rates
+            </button>
+            <button
+              onClick={() => navigate('/admin/settings')}
+              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
             >
-              <SettingsIcon className="w-3.5 h-3.5 text-slate-400" />
-              <span>Settings Page</span>
-            </Link>
-          </div>
+              Settings
+            </button>
+            <button
+              onClick={() => navigate('/admin/orders')}
+              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => navigate('/admin/delivery-zones')}
+              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+            >
+              Delivery Zones
+            </button>
+            <button
+              onClick={() => signOut()}
+              className="ml-3 py-1.5 px-3 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+            >
+              Sign Out
+            </button>
+          </nav>
         </div>
 
         {/* Status Alerts */}

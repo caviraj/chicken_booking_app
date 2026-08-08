@@ -1,13 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
-export interface AdminSettings {
-  cod_enabled: boolean
-  order_cutoff_time: string
-  daily_stock_limit_kg: number | null
-  shop_lat: number | null
-  shop_lng: number | null
-  delivery_enabled_days: string[]
-  cleaning_day: boolean
+export interface MeatRatePayload {
+  admin_email: string
+  meat_type: string
+  rate_per_kg: number
+  effective_date?: string
 }
 
 export interface RateHistoryItem {
@@ -16,33 +13,79 @@ export interface RateHistoryItem {
   rate_per_kg: number
   effective_date: string
   created_at?: string
+  created_by?: string
 }
 
-export const verifyAdminUser = async (email: string): Promise<boolean> => {
+export interface AdminSettings {
+  id?: string
+  order_cutoff_time: string
+  daily_stock_limit_kg: number
+  shop_latitude: number
+  shop_longitude: number
+  shop_lat?: number | null
+  shop_lng?: number | null
+  is_cleaning_day: boolean
+  cleaning_day?: boolean
+  cod_enabled?: boolean
+  delivery_enabled_days?: string[]
+  updated_at?: string
+}
+
+
+
+export interface AdminSettingsPayload {
+  admin_email: string
+  order_cutoff_time: string
+  daily_stock_limit_kg: number
+  shop_latitude: number
+  shop_longitude: number
+  is_cleaning_day: boolean
+}
+
+export interface DeliveryZonePayload {
+  admin_email: string
+  zone_name: string
+  max_distance_km: number
+  delivery_charge: number
+  is_active: boolean
+}
+
+export const verifyAdminEmail = async (email: string): Promise<boolean> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/admin/verify?email=${encodeURIComponent(email)}`)
+    const res = await fetch(`${API_BASE_URL}/api/admin/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+
     if (!res.ok) return false
     const data = await res.json()
-    return data.is_admin === true
+    return !!data.is_admin
   } catch (err) {
-    return true // Dev fallback
+    console.error('Error verifying admin:', err)
+    return false
   }
 }
 
-export const fetchAdminRateHistory = async (): Promise<RateHistoryItem[]> => {
+// Export alias for backward compatibility
+export const verifyAdminUser = verifyAdminEmail
+
+export const fetchRatesHistory = async (meatType?: string): Promise<RateHistoryItem[]> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/admin/rates`)
-    if (!res.ok) throw new Error('Failed to fetch rate history')
+    const url = meatType
+      ? `${API_BASE_URL}/api/admin/rates?meat_type=${meatType}`
+      : `${API_BASE_URL}/api/admin/rates`
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('Failed to fetch rates history')
     const data = await res.json()
     return data.rates || []
   } catch (err) {
-    return [
-      { id: '1', meat_type: 'chicken', rate_per_kg: 240, effective_date: new Date().toISOString().split('T')[0] },
-      { id: '2', meat_type: 'mutton', rate_per_kg: 750, effective_date: new Date().toISOString().split('T')[0] },
-      { id: '3', meat_type: 'duck', rate_per_kg: 380, effective_date: new Date().toISOString().split('T')[0] }
-    ]
+    console.error('Error fetching rates history:', err)
+    return []
   }
 }
+
+export const fetchAdminRateHistory = fetchRatesHistory
 
 export const updateMeatRate = async (
   adminEmail: string,
@@ -50,20 +93,21 @@ export const updateMeatRate = async (
   ratePerKg: number,
   effectiveDate?: string
 ): Promise<any> => {
+  const payload: MeatRatePayload = {
+    admin_email: adminEmail,
+    meat_type: meatType,
+    rate_per_kg: ratePerKg,
+    effective_date: effectiveDate
+  }
   const res = await fetch(`${API_BASE_URL}/api/admin/rates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      admin_email: adminEmail,
-      meat_type: meatType,
-      rate_per_kg: ratePerKg,
-      effective_date: effectiveDate
-    })
+    body: JSON.stringify(payload)
   })
 
   if (!res.ok) {
     const errData = await res.json()
-    throw new Error(errData.detail || 'Failed to update rate')
+    throw new Error(errData.detail || 'Failed to update meat rate')
   }
 
   return await res.json()
@@ -72,38 +116,157 @@ export const updateMeatRate = async (
 export const fetchAdminSettings = async (): Promise<AdminSettings> => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/admin/settings`)
-    if (!res.ok) throw new Error('Failed to fetch settings')
+    if (!res.ok) throw new Error('Failed to fetch admin settings')
     const data = await res.json()
-    return data.settings
+    return data.settings || {}
   } catch (err) {
+    console.error('Error fetching admin settings:', err)
     return {
-      cod_enabled: true,
       order_cutoff_time: '20:00',
-      daily_stock_limit_kg: 100.0,
-      shop_lat: 13.0827,
-      shop_lng: 80.2707,
-      delivery_enabled_days: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-      cleaning_day: false
+      daily_stock_limit_kg: 100,
+      shop_latitude: 13.0827,
+      shop_longitude: 80.2707,
+      is_cleaning_day: false
     }
   }
 }
 
-export const saveAdminSettings = async (
-  adminEmail: string,
-  settings: AdminSettings
-): Promise<any> => {
+export const updateAdminSettings = async (payload: AdminSettingsPayload): Promise<any> => {
   const res = await fetch(`${API_BASE_URL}/api/admin/settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      admin_email: adminEmail,
-      ...settings
-    })
+    body: JSON.stringify(payload)
   })
 
   if (!res.ok) {
     const errData = await res.json()
-    throw new Error(errData.detail || 'Failed to update settings')
+    throw new Error(errData.detail || 'Failed to update admin settings')
+  }
+
+  return await res.json()
+}
+
+export const saveAdminSettings = updateAdminSettings
+
+// --- Phase 11: Orders Management API Helpers ---
+
+export const fetchAdminOrders = async (filters?: {
+  delivery_date?: string
+  source?: string
+  order_status?: string
+  payment_method?: string
+}): Promise<any[]> => {
+  try {
+    const queryParams = new URLSearchParams()
+    if (filters?.delivery_date) queryParams.append('delivery_date', filters.delivery_date)
+    if (filters?.source) queryParams.append('source', filters.source)
+    if (filters?.order_status) queryParams.append('order_status', filters.order_status)
+    if (filters?.payment_method) queryParams.append('payment_method', filters.payment_method)
+
+    const res = await fetch(`${API_BASE_URL}/api/admin/orders?${queryParams.toString()}`)
+    if (!res.ok) throw new Error('Failed to fetch admin orders')
+    const data = await res.json()
+    return data.orders || []
+  } catch (err) {
+    console.error('Error fetching admin orders:', err)
+    return []
+  }
+}
+
+export const updateOrderStatus = async (
+  orderId: string,
+  adminEmail: string,
+  newStatus: string
+): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_email: adminEmail, order_status: newStatus })
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to update order status')
+  }
+
+  return await res.json()
+}
+
+export const updateOrderPaymentStatus = async (
+  orderId: string,
+  adminEmail: string,
+  newPaymentStatus: string
+): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/orders/${orderId}/payment-status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_email: adminEmail, payment_status: newPaymentStatus })
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to update payment status')
+  }
+
+  return await res.json()
+}
+
+// --- Phase 11: Delivery Zones API Helpers ---
+
+export const fetchAdminDeliveryZones = async (): Promise<any[]> => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/admin/delivery-zones`)
+    if (!res.ok) throw new Error('Failed to fetch delivery zones')
+    const data = await res.json()
+    return data.zones || []
+  } catch (err) {
+    console.error('Error fetching delivery zones:', err)
+    return []
+  }
+}
+
+export const createDeliveryZone = async (payload: DeliveryZonePayload): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/delivery-zones`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to create delivery zone')
+  }
+
+  return await res.json()
+}
+
+export const updateDeliveryZone = async (
+  zoneId: string,
+  payload: DeliveryZonePayload
+): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/delivery-zones/${zoneId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to update delivery zone')
+  }
+
+  return await res.json()
+}
+
+export const deleteDeliveryZone = async (zoneId: string, adminEmail: string): Promise<any> => {
+  const res = await fetch(
+    `${API_BASE_URL}/api/admin/delivery-zones/${zoneId}?admin_email=${encodeURIComponent(adminEmail)}`,
+    { method: 'DELETE' }
+  )
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to delete delivery zone')
   }
 
   return await res.json()

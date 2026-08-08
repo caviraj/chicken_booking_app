@@ -15,6 +15,8 @@ import { OrderHistoryPage } from './pages/OrderHistoryPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminRatesPage } from './pages/admin/AdminRatesPage'
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage'
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage'
+import { AdminZonesPage } from './pages/admin/AdminZonesPage'
 
 import './i18n/config'
 
@@ -78,6 +80,23 @@ export const App: React.FC = () => {
               </AdminProtectedRoute>
             }
           />
+          <Route
+            path="/admin/orders"
+            element={
+              <AdminProtectedRoute>
+                <AdminOrdersPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/delivery-zones"
+            element={
+              <AdminProtectedRoute>
+                <AdminZonesPage />
+              </AdminProtectedRoute>
+            }
+          />
+
 
           <Route path="*" element={<Navigate to="/booking" replace />} />
         </Routes>
