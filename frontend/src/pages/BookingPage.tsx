@@ -148,8 +148,14 @@ export const BookingPage: React.FC = () => {
       }
 
       const res = await submitOrder(payload)
-      setCreatedOrder(res.order || res)
-      setStep(9) // Step 9: Order Confirmation
+      const newOrder = res.order || res
+      setCreatedOrder(newOrder)
+      if (newOrder && newOrder.id) {
+        navigate(`/order-confirmation/${newOrder.id}`)
+      } else {
+        setStep(9)
+      }
+
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to confirm order')
     } finally {

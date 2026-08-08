@@ -6,6 +6,8 @@ import { AdminProtectedRoute } from './components/AdminProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { BookingPage } from './pages/BookingPage'
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
+
 
 // Admin Pages
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
@@ -37,6 +39,15 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/order-confirmation/:orderId"
+            element={
+              <ProtectedRoute>
+                <OrderConfirmationPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLoginPage />} />

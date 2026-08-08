@@ -154,6 +154,8 @@ def create_order(
 
     grand_total = round(item_total + delivery_charge, 2)
 
+    payment_status_val = "cod_pending" if payment_method.lower() == "cod" else "pending"
+
     # 4. Insert into orders table
     order_payload = {
         "customer_id": customer_id,
@@ -170,7 +172,7 @@ def create_order(
         "item_total": item_total,
         "grand_total": grand_total,
         "payment_method": payment_method.lower(),
-        "payment_status": "pending",
+        "payment_status": payment_status_val,
         "order_status": "confirmed"
     }
 
@@ -183,4 +185,27 @@ def create_order(
     if not insert_res.data:
         raise RuntimeError("Failed to create order in database.")
 
-    return insert_res.data[0]
+    created_order = insert_res.data[0]
+
+    # 5. Generate Razorpay Payment Link if Online Payment selected
+    if payment_method.lower() == "online":
+        try:
+            from app.services.payment_service import create_razorpay_payment_link
+            link_info = create_razorpay_payment_link(supabase, order_id=created_order["id"])
+            if link_info and link_info.get("short_url"):
+                updated_res = (
+                    supabase.table("orders")
+                    .update({"razorpay_payment_link": link_info["short_url"]})
+                    .eq("id", created_order["id"])
+                    .execute()
+                )
+                if updated_res.data:
+                    created_order = updated_res.data[0]
+                else:
+                    created_order["razorpay_payment_link"] = link_info["short_url"]
+        except Exception as p_err:
+            # Log error but return created order
+            created_order["payment_error"] = str(p_err)
+
+    return created_order
+

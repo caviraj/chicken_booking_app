@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.booking import router as booking_router
 from app.admin_api.admin_routes import router as admin_router
+from app.webhooks.razorpay_webhook import router as razorpay_webhook_router
 
 app = FastAPI(
     title="Meat Booking & Delivery API",
@@ -21,6 +22,8 @@ app.add_middleware(
 # Register API routers
 app.include_router(booking_router)
 app.include_router(admin_router)
+app.include_router(razorpay_webhook_router)
+
 
 
 @app.get("/")
