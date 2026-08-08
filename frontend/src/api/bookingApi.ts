@@ -117,3 +117,31 @@ export const submitOrder = async (payload: CreateOrderPayload): Promise<any> => 
 
   return await res.json()
 }
+
+export const fetchCustomerOrders = async (customerId: string): Promise<any[]> => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/booking/orders/customer/${customerId}`)
+    if (!res.ok) throw new Error('Failed to fetch orders')
+    const data = await res.json()
+    return data.orders || []
+  } catch (err) {
+    console.error('Error fetching customer orders:', err)
+    return []
+  }
+}
+
+export const cancelCustomerOrder = async (orderId: string, customerId: string): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/api/booking/orders/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ order_id: orderId, customer_id: customerId })
+  })
+
+  if (!res.ok) {
+    const errData = await res.json()
+    throw new Error(errData.detail || 'Failed to cancel order')
+  }
+
+  return await res.json()
+}
+

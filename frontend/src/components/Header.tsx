@@ -33,6 +33,17 @@ export const Header: React.FC = () => {
 
       {/* Right controls */}
       <div className="flex items-center gap-3">
+        {/* My Orders link */}
+        {user && (
+          <a
+            href="/orders"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-semibold border border-orange-500/20 transition-all"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t('header.myOrders')}</span>
+          </a>
+        )}
+
         {/* Admin Link */}
         <a
           href="/admin/rates"
@@ -40,6 +51,7 @@ export const Header: React.FC = () => {
         >
           <span>Admin Panel</span>
         </a>
+
 
         {/* Language Switcher */}
         <button

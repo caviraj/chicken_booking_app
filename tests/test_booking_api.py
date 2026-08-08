@@ -72,3 +72,63 @@ def test_calculate_delivery_endpoint(mock_get_client, mock_calc):
     response = client.post("/api/booking/calculate-delivery", json=payload)
     assert response.status_code == 200
     assert response.json()["delivery_charge"] == 30.0
+
+
+@patch("app.api.booking.get_supabase_client")
+def test_get_customer_orders_endpoint(mock_get_client):
+    """Test fetching customer order history."""
+    mock_supabase = MagicMock()
+    mock_get_client.return_value = mock_supabase
+
+    mock_res = MagicMock()
+    mock_res.data = [
+        {"id": "o-1", "customer_id": "cust-123", "meat_type": "chicken", "grand_total": 270.0}
+    ]
+
+    mock_table = MagicMock()
+    mock_supabase.table.return_value = mock_table
+    mock_table.select.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.order.return_value = mock_table
+    mock_table.execute.return_value = mock_res
+
+    response = client.get("/api/booking/orders/customer/cust-123")
+    assert response.status_code == 200
+    assert "orders" in response.json()
+    assert len(response.json()["orders"]) == 1
+
+
+@patch("app.api.booking.get_supabase_client")
+def test_cancel_order_endpoint_pre_cutoff(mock_get_client):
+    """Test pre-cutoff order cancellation."""
+    mock_supabase = MagicMock()
+    mock_get_client.return_value = mock_supabase
+
+    # Mock order for tomorrow (future date -> cancellation allowed)
+    mock_order = MagicMock()
+    mock_order.data = {
+        "id": "o-99",
+        "customer_id": "cust-123",
+        "delivery_date": "2026-12-31",
+        "order_status": "confirmed"
+    }
+
+    mock_updated = MagicMock()
+    mock_updated.data = [{
+        "id": "o-99",
+        "order_status": "cancelled"
+    }]
+
+    mock_table = MagicMock()
+    mock_supabase.table.return_value = mock_table
+    mock_table.select.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.single.return_value = mock_table
+    mock_table.update.return_value = mock_table
+    mock_table.execute.side_effect = [mock_order, mock_updated]
+
+    payload = {"order_id": "o-99", "customer_id": "cust-123"}
+    response = client.post("/api/booking/orders/cancel", json=payload)
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+

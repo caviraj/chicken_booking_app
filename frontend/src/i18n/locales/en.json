@@ -3,6 +3,7 @@
     "title": "Fresh Meat Booking",
     "dashboard": "Dashboard",
     "bookNow": "Book Fresh Meat",
+    "myOrders": "My Orders",
     "signOut": "Sign Out",
     "language": "Language"
   },
@@ -84,5 +85,20 @@
     "orderId": "Order Reference ID",
     "deliveryScheduledFor": "Delivery scheduled for {{date}} during {{slot}} slot",
     "goDashboard": "Go to Dashboard"
+  },
+  "orders": {
+    "title": "My Order History",
+    "subtitle": "Track, view details, and manage your fresh meat bookings",
+    "allTab": "All Orders",
+    "activeTab": "Active",
+    "pastTab": "Past",
+    "cancelledTab": "Cancelled",
+    "noOrders": "No orders found under this category.",
+    "cancelOrder": "Cancel Order",
+    "cancelNotice": "Cancellations allowed before cutoff time (20:00)",
+    "cancelling": "Cancelling...",
+    "orderCancelled": "Order has been cancelled.",
+    "payNow": "Pay ₹{{amount}} via Razorpay",
+    "orderStatus": "Status"
   }
 }

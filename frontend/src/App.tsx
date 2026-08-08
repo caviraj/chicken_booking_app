@@ -7,6 +7,8 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { BookingPage } from './pages/BookingPage'
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
+import { OrderHistoryPage } from './pages/OrderHistoryPage'
+
 
 
 // Admin Pages
@@ -47,6 +49,15 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrderHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
 
 
           {/* Admin Routes */}
