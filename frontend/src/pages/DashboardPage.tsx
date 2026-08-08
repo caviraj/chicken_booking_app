@@ -1,12 +1,16 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+
 import { Header } from '../components/Header'
 import { User, Mail, Phone, Globe, ShieldCheck, ShoppingBag } from 'lucide-react'
 
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user, customer } = useAuth()
+
 
   const displayName = customer?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Valued Customer'
 
@@ -29,9 +33,20 @@ export const DashboardPage: React.FC = () => {
                 {t('dashboard.welcome', { name: displayName })}
               </h2>
               <p className="text-sm text-slate-400 mt-1">
-                Your account is active and verified. Booking flow will be available in Phase 4.
+                Your account is active. Click below to start booking fresh meat.
               </p>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/booking')}
+                  className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 flex items-center gap-2 transition-all hover:scale-105"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>{t('dashboard.startBooking')}</span>
+                </button>
+              </div>
             </div>
+
 
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
               <ShoppingBag className="w-7 h-7 text-slate-950" />

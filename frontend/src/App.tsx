@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { BookingPage } from './pages/BookingPage'
 import './i18n/config'
 
 export const App: React.FC = () => {
@@ -20,7 +21,15 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/booking"
+            element={
+              <ProtectedRoute>
+                <BookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/booking" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
