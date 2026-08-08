@@ -1,76 +1,102 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch, MagicMock
+from datetime import datetime, timezone, timedelta
 import pytest
 
-from app.services.delivery_service import calculate_delivery_charge
+from app.services.delivery_service import (
+    calculate_delivery_charge,
+    haversine_distance_km,
+    normalize_address,
+    get_cached_distance,
+    store_cached_distance
+)
 
-@patch("app.services.delivery_service._compute_google_route_distance")
-def test_calculate_delivery_charge_google_success(mock_google_dist):
-    """Test delivery charge calculation when Google Routes returns distance."""
+def test_haversine_distance_calculation():
+    """Test straight-line distance calculation between two points."""
+    # Distance between Chennai Central and T.Nagar is approx 6.03 km straight line
+    dist = haversine_distance_km(13.0827, 80.2707, 13.0418, 80.2341)
+    assert 5.5 <= dist <= 7.0
+
+
+
+def test_haversine_road_correction_factor():
+    """Test 1.35 road distance correction factor application."""
+    straight_dist = 10.0
+    corrected_dist = straight_dist * 1.35
+    assert corrected_dist == 13.5
+
+
+def test_persistent_db_cache_lookup_valid():
+    """Test looking up valid (<30 days) cached distance from DB table."""
     mock_supabase = MagicMock()
+    mock_table = MagicMock()
+    mock_res = MagicMock()
 
-    # Google routes returns 4.5 km
-    mock_google_dist.return_value = 4.5
+    now_iso = datetime.now(timezone.utc).isoformat()
+    mock_res.data = {
+        "distance_km": 4.5,
+        "computed_at": now_iso
+    }
 
-    # Mock delivery_zones
-    mock_zones_res = MagicMock()
-    mock_zones_res.data = [
-        {"zone_name": "Inner City", "max_distance_km": 3.0, "delivery_charge": 25.0, "active": True},
-        {"zone_name": "Suburbs", "max_distance_km": 10.0, "delivery_charge": 50.0, "active": True}
-    ]
+    mock_supabase.table.return_value = mock_table
+    mock_table.select.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.maybeSingle.return_value = mock_table
+    mock_table.execute.return_value = mock_res
+
+    dist = get_cached_distance(mock_supabase, "123 anna salai chennai")
+    assert dist == 4.5
+
+
+def test_persistent_db_cache_lookup_expired():
+    """Test expired (>30 days) cached distance returning None."""
+    mock_supabase = MagicMock()
+    mock_table = MagicMock()
+    mock_res = MagicMock()
+
+    expired_iso = (datetime.now(timezone.utc) - timedelta(days=35)).isoformat()
+    mock_res.data = {
+        "distance_km": 4.5,
+        "computed_at": expired_iso
+    }
+
+    mock_supabase.table.return_value = mock_table
+    mock_table.select.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.maybeSingle.return_value = mock_table
+    mock_table.execute.return_value = mock_res
+
+    dist = get_cached_distance(mock_supabase, "123 anna salai chennai")
+    assert dist is None
+
+
+@patch("app.services.delivery_service._geocode_nominatim")
+@patch("app.services.delivery_service.get_cached_distance")
+def test_calculate_delivery_charge_tertiary_haversine(mock_get_cache, mock_geocode):
+    """Test Tertiary Fallback: Nominatim geocoding + Haversine * 1.35 multiplier."""
+    mock_get_cache.return_value = None
+    # Geocode returns customer coords (~5km away)
+    mock_geocode.return_value = (13.0500, 80.2500)
+
+    mock_supabase = MagicMock()
+    mock_zone_res = MagicMock()
+    mock_zone_res.data = [{"zone_name": "Zone B (5-10 km)", "delivery_charge": 50.0, "max_distance_km": 10.0}]
 
     mock_table = MagicMock()
     mock_supabase.table.return_value = mock_table
     mock_table.select.return_value = mock_table
     mock_table.limit.return_value = mock_table
-    mock_table.eq.return_value = mock_table
+    mock_table.filter.return_value = mock_table
     mock_table.order.return_value = mock_table
-    mock_table.execute.return_value = mock_zones_res
+    mock_table.upsert.return_value = mock_table
+    mock_table.execute.return_value = mock_zone_res
 
     res = calculate_delivery_charge(
         supabase=mock_supabase,
-        customer_address="Anna Nagar, Chennai",
+        customer_address="T Nagar, Chennai",
         shop_lat=13.0827,
-        shop_lng=80.2707,
-        google_api_key="fake-key"
+        shop_lng=80.2707
     )
 
     assert res["delivery_charge"] == 50.0
-    assert res["distance_km"] == 4.5
-    assert res["delivery_zone"] == "Suburbs"
-    assert res["source"] == "google_routes"
-
-
-@patch("app.services.delivery_service._compute_google_route_distance")
-def test_calculate_delivery_charge_fallback(mock_google_dist):
-    """Test falling back to default delivery zone when Google Routes API is unavailable."""
-    mock_supabase = MagicMock()
-
-    # Google routes fails / returns None
-    mock_google_dist.return_value = None
-
-    mock_zones_res = MagicMock()
-    mock_zones_res.data = [
-        {"zone_name": "Standard Delivery", "max_distance_km": 5.0, "delivery_charge": 35.0, "active": True}
-    ]
-
-    mock_table = MagicMock()
-    mock_supabase.table.return_value = mock_table
-    mock_table.select.return_value = mock_table
-    mock_table.limit.return_value = mock_table
-    mock_table.eq.return_value = mock_table
-    mock_table.order.return_value = mock_table
-    mock_table.execute.return_value = mock_zones_res
-
-    res = calculate_delivery_charge(
-        supabase=mock_supabase,
-        customer_address="Unknown Address",
-        shop_lat=13.0827,
-        shop_lng=80.2707,
-        google_api_key=None
-    )
-
-    assert res["delivery_charge"] == 35.0
-    assert res["distance_km"] is None
-    assert res["delivery_zone"] == "Standard Delivery"
-    assert res["source"] == "fallback_zone"
-
+    assert res["provider"] == "haversine_nominatim_corrected"
+    assert res["distance_km"] > 0

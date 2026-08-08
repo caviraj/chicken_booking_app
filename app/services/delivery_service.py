@@ -1,56 +1,177 @@
 import os
+import math
+import time
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 import httpx
 from supabase import Client
 
-def _compute_google_route_distance(
-    google_api_key: str,
-    shop_lat: float,
-    shop_lng: float,
-    customer_address: str
+# Nominatim rate-limiting state
+_last_nominatim_request_time = 0.0
+
+def normalize_address(address: str) -> str:
+    """Normalizes address string for consistent DB cache key lookups."""
+    return " ".join(address.lower().strip().split())
+
+
+def haversine_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Computes straight-line distance in km using the Haversine formula.
+    """
+    R = 6371.0 # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def get_cached_distance(supabase: Client, norm_address: str) -> Optional[float]:
+    """
+    Looks up address in address_distance_cache table with a 30-day TTL.
+    Returns cached distance_km if found and valid (<30 days old), else None.
+    """
+    try:
+        res = (
+            supabase.table("address_distance_cache")
+            .select("distance_km, computed_at")
+            .eq("address_normalized", norm_address)
+            .maybeSingle()
+            .execute()
+        )
+
+        if res.data and "distance_km" in res.data and "computed_at" in res.data:
+            computed_str = res.data["computed_at"]
+            # Parse computed_at datetime
+            if computed_str.endswith("Z"):
+                computed_dt = datetime.fromisoformat(computed_str.replace("Z", "+00:00"))
+            else:
+                computed_dt = datetime.fromisoformat(computed_str)
+
+            # 30 days TTL check
+            cutoff_dt = datetime.now(timezone.utc) - timedelta(days=30)
+            if computed_dt.tzinfo is None:
+                computed_dt = computed_dt.replace(tzinfo=timezone.utc)
+
+            if computed_dt >= cutoff_dt:
+                return float(res.data["distance_km"])
+    except Exception:
+        pass
+    return None
+
+
+def store_cached_distance(supabase: Client, norm_address: str, distance_km: float):
+    """Stores computed distance in address_distance_cache table."""
+    try:
+        supabase.table("address_distance_cache").upsert({
+            "address_normalized": norm_address,
+            "distance_km": round(distance_km, 2),
+            "computed_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+    except Exception:
+        pass
+
+
+def _try_google_routes_api(
+    shop_lat: float, shop_lng: float, customer_address: str
 ) -> Optional[float]:
-    """
-    Calls Google Routes API (Compute Route Matrix v2) to get driving distance in kilometers.
-    Returns distance in km or None if request fails.
-    """
+    """Tier 1: Google Routes API (Compute Route Matrix) for real road distance."""
+    api_key = os.getenv("GOOGLE_MAPS_API_KEY", "")
+    if not api_key:
+        return None
+
     url = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix"
     headers = {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": google_api_key,
-        "X-Goog-FieldMask": "originIndex,destinationIndex,distanceMeters,duration,status"
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "originIndex,destinationIndex,distanceMeters,duration"
     }
     payload = {
-        "origins": [
-            {
-                "waypoint": {
-                    "location": {
-                        "latLng": {
-                            "latitude": shop_lat,
-                            "longitude": shop_lng
-                        }
-                    }
-                }
-            }
-        ],
-        "destinations": [
-            {
-                "waypoint": {
-                    "address": customer_address
-                }
-            }
-        ],
-        "travelMode": "DRIVE"
+        "origins": [{"waypoint": {"location": {"latLng": {"latitude": shop_lat, "longitude": shop_lng}}}}],
+        "destinations": [{"waypoint": {"address": customer_address}}]
     }
 
     try:
         with httpx.Client(timeout=5.0) as client:
-            response = client.post(url, json=payload, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    distance_meters = data[0].get("distanceMeters")
-                    if distance_meters is not None:
-                        return round(distance_meters / 1000.0, 2)
+            res = client.post(url, json=payload, headers=headers)
+            if res.status_code == 200:
+                data = res.json()
+                if data and len(data) > 0 and "distanceMeters" in data[0]:
+                    dist_meters = data[0]["distanceMeters"]
+                    return round(dist_meters / 1000.0, 2)
+    except Exception:
+        pass
+    return None
+
+
+def _try_openrouteservice_api(
+    shop_lat: float, shop_lng: float, cust_lat: float, cust_lng: float
+) -> Optional[float]:
+    """Tier 2: OpenRouteService Matrix API for free-tier real road distance."""
+    api_key = os.getenv("OPENROUTESERVICE_API_KEY", "")
+    if not api_key:
+        return None
+
+    url = "https://api.openrouteservice.org/v2/matrix/driving-car"
+    headers = {
+        "Authorization": api_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "locations": [
+            [shop_lng, shop_lat],
+            [cust_lng, cust_lat]
+        ],
+        "metrics": ["distance"]
+    }
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            res = client.post(url, json=payload, headers=headers)
+            if res.status_code == 200:
+                data = res.json()
+                distances = data.get("distances", [])
+                if len(distances) >= 2 and len(distances[0]) >= 2:
+                    dist_m = distances[0][1]
+                    if dist_m is not None:
+                        return round(dist_m / 1000.0, 2)
+    except Exception:
+        pass
+    return None
+
+
+def _geocode_nominatim(address: str) -> Optional[tuple[float, float]]:
+    """
+    Geocodes address string to (lat, lng) using Nominatim OSM.
+    Enforces Nominatim policy: 1 request/second rate-limit + custom User-Agent.
+    """
+    global _last_nominatim_request_time
+    now = time.time()
+    elapsed = now - _last_nominatim_request_time
+    if elapsed < 1.0:
+        time.sleep(1.0 - elapsed)
+    _last_nominatim_request_time = time.time()
+
+    url = "https://nominatim.openstreetmap.org/search"
+    headers = {
+        "User-Agent": "FreshMeatBookingApp/1.0 (contact@meatshop.com)"
+    }
+    params = {
+        "q": address,
+        "format": "json",
+        "limit": 1
+    }
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            res = client.get(url, params=params, headers=headers)
+            if res.status_code == 200:
+                data = res.json()
+                if data and len(data) > 0:
+                    return float(data[0]["lat"]), float(data[0]["lon"])
     except Exception:
         pass
     return None
@@ -60,94 +181,137 @@ def calculate_delivery_charge(
     supabase: Client,
     customer_address: str,
     shop_lat: Optional[float] = None,
-    shop_lng: Optional[float] = None,
-    google_api_key: Optional[str] = None
+    shop_lng: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Calculates delivery charge based on shop coordinates and customer delivery address.
-    Attempts Google Routes API first. If unsuccessful or key missing, falls back to
-    matching zone in `delivery_zones` table.
-
-    Args:
-        supabase (Client): Initialized Supabase client.
-        customer_address (str): Delivery destination address.
-        shop_lat (Optional[float]): Shop latitude (fetched from admin_settings if None).
-        shop_lng (Optional[float]): Shop longitude (fetched from admin_settings if None).
-        google_api_key (Optional[str]): Google Maps/Routes API key (fetched from env if None).
-
-    Returns:
-        Dict[str, Any]: Dictionary containing delivery_charge, distance_km, delivery_zone, and calculation_source.
+    Calculates delivery fee using a 4-tier fallback chain:
+    1. Primary: Google Routes API (real road distance)
+    2. Secondary: OpenRouteService Matrix API (free-tier road distance)
+    3. Tertiary: Nominatim Geocoding + Haversine * 1.35 road correction factor
+    4. Final Fallback: Database delivery_zones band
+    
+    Caches computed distance in address_distance_cache DB table with 30-day TTL.
     """
-    if google_api_key is None:
-        google_api_key = os.getenv("GOOGLE_MAPS_API_KEY", os.getenv("GOOGLE_ROUTES_API_KEY"))
+    norm_address = normalize_address(customer_address)
 
-    # Fetch shop coordinates from admin_settings if not provided
+    # 0. Persistent DB Cache Lookup (30-day TTL)
+    cached_dist = get_cached_distance(supabase, norm_address)
+    if cached_dist is not None:
+        zone_info = _find_delivery_zone_for_distance(supabase, cached_dist)
+        return {
+            "delivery_charge": zone_info["delivery_charge"],
+            "delivery_zone": zone_info["zone_name"],
+            "distance_km": cached_dist,
+            "is_cached": True,
+            "provider": "persistent_db_cache"
+        }
+
+    # Fetch shop coordinates if not provided
     if shop_lat is None or shop_lng is None:
-        settings_res = (
-            supabase.table("admin_settings")
-            .select("shop_lat, shop_lng")
+        try:
+            settings_res = supabase.table("admin_settings").select("shop_latitude, shop_longitude").limit(1).execute()
+            if settings_res.data and len(settings_res.data) > 0:
+                shop_lat = float(settings_res.data[0].get("shop_latitude") or 13.0827)
+                shop_lng = float(settings_res.data[0].get("shop_longitude") or 80.2707)
+            else:
+                shop_lat, shop_lng = 13.0827, 80.2707
+        except Exception:
+            shop_lat, shop_lng = 13.0827, 80.2707
+
+    computed_dist: Optional[float] = None
+    provider_used = ""
+
+    # Tier 1: Google Routes API
+    computed_dist = _try_google_routes_api(shop_lat, shop_lng, customer_address)
+    if computed_dist is not None:
+        provider_used = "google_routes_api"
+
+    # Tier 2 & 3: Geocode customer address for OpenRouteService or Haversine fallback
+    if computed_dist is None:
+        cust_coords = _geocode_nominatim(customer_address)
+        if cust_coords:
+            c_lat, c_lng = cust_coords
+
+            # Tier 2: OpenRouteService Matrix API
+            computed_dist = _try_openrouteservice_api(shop_lat, shop_lng, c_lat, c_lng)
+            if computed_dist is not None:
+                provider_used = "openrouteservice_api"
+
+            # Tier 3: Nominatim + Haversine * 1.35 Road Correction Factor
+            if computed_dist is None:
+                straight_line_km = haversine_distance_km(shop_lat, shop_lng, c_lat, c_lng)
+                computed_dist = round(straight_line_km * 1.35, 2) # 1.35 road correction factor
+                provider_used = "haversine_nominatim_corrected"
+
+    # Tier 4: Final Fallback (If all geocoding/routes fail)
+    if computed_dist is None:
+        zone_info = _find_delivery_zone_fallback(supabase)
+        return {
+            "delivery_charge": zone_info["delivery_charge"],
+            "delivery_zone": zone_info["zone_name"],
+            "distance_km": zone_info["max_distance_km"],
+            "is_fallback": True,
+            "provider": "delivery_zones_fallback"
+        }
+
+    # Store in DB Cache for repeat customer lookup
+    store_cached_distance(supabase, norm_address, computed_dist)
+
+    # Match computed distance against delivery_zones table
+    zone_info = _find_delivery_zone_for_distance(supabase, computed_dist)
+    return {
+        "delivery_charge": zone_info["delivery_charge"],
+        "delivery_zone": zone_info["zone_name"],
+        "distance_km": computed_dist,
+        "is_fallback": False,
+        "provider": provider_used
+    }
+
+
+def _find_delivery_zone_for_distance(supabase: Client, distance_km: float) -> Dict[str, Any]:
+    """Finds the matching delivery zone band for a computed distance."""
+    try:
+        res = (
+            supabase.table("delivery_zones")
+            .select("*")
+            .filter("is_active", "eq", True)
+            .filter("max_distance_km", "gte", distance_km)
+            .order("max_distance_km", desc=False)
             .limit(1)
             .execute()
         )
-        if settings_res.data and len(settings_res.data) > 0:
-            shop_lat = float(settings_res.data[0].get("shop_lat") or 0.0)
-            shop_lng = float(settings_res.data[0].get("shop_lng") or 0.0)
+        if res.data and len(res.data) > 0:
+            return res.data[0]
+    except Exception:
+        pass
 
-    distance_km: Optional[float] = None
-    if google_api_key and shop_lat and shop_lng:
-        distance_km = _compute_google_route_distance(
-            google_api_key=google_api_key,
-            shop_lat=shop_lat,
-            shop_lng=shop_lng,
-            customer_address=customer_address
-        )
-
-    # Query delivery zones from Supabase
-    zones_res = (
-        supabase.table("delivery_zones")
-        .select("*")
-        .eq("active", True)
-        .order("max_distance_km", desc=False)
-        .execute()
-    )
-
-    zones = zones_res.data or []
-
-    # Case 1: Google Routes distance retrieved successfully
-    if distance_km is not None and zones:
-        for zone in zones:
-            max_dist = zone.get("max_distance_km")
-            if max_dist is None or distance_km <= float(max_dist):
-                return {
-                    "delivery_charge": float(zone["delivery_charge"]),
-                    "distance_km": distance_km,
-                    "delivery_zone": zone["zone_name"],
-                    "source": "google_routes"
-                }
-        
-        # If distance exceeds all max_distance_km bounds, return max zone charge or default
-        last_zone = zones[-1]
-        return {
-            "delivery_charge": float(last_zone["delivery_charge"]),
-            "distance_km": distance_km,
-            "delivery_zone": last_zone["zone_name"],
-            "source": "google_routes"
-        }
-
-    # Case 2: Fallback to default zone if distance API failed or no zones configured
-    if zones:
-        first_zone = zones[0]
-        return {
-            "delivery_charge": float(first_zone["delivery_charge"]),
-            "distance_km": None,
-            "delivery_zone": first_zone["zone_name"],
-            "source": "fallback_zone"
-        }
-
-    # Ultimate default fallback if table is empty
+    # Fallback default band if distance exceeds configured zones
+    charge = round(max(30.0, distance_km * 15.0), 2)
     return {
+        "zone_name": f"Zone ({round(distance_km, 1)} km)",
+        "delivery_charge": charge,
+        "max_distance_km": distance_km
+    }
+
+
+def _find_delivery_zone_fallback(supabase: Client) -> Dict[str, Any]:
+    """Returns default delivery zone band when external APIs are unreachable."""
+    try:
+        res = (
+            supabase.table("delivery_zones")
+            .select("*")
+            .filter("is_active", "eq", True)
+            .order("max_distance_km", desc=False)
+            .limit(1)
+            .execute()
+        )
+        if res.data and len(res.data) > 0:
+            return res.data[0]
+    except Exception:
+        pass
+
+    return {
+        "zone_name": "Standard Zone (0-5 km)",
         "delivery_charge": 30.0,
-        "distance_km": None,
-        "delivery_zone": "Standard Delivery",
-        "source": "default_fallback"
+        "max_distance_km": 5.0
     }
