@@ -1,9 +1,10 @@
 import os
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from app.services.whatsapp_client import send_whatsapp_text
+from app.core.supabase import get_supabase_client
+from app.services.conversation_service import handle_whatsapp_message
 
 router = APIRouter(prefix="/webhooks", tags=["WhatsApp Webhook"])
 
@@ -21,7 +22,6 @@ def verify_whatsapp_webhook(
 
     if hub_mode == "subscribe" and hub_verify_token == expected_verify_token:
         if hub_challenge:
-            # Return raw challenge string with 200 OK as required by Meta
             return PlainTextResponse(content=hub_challenge, status_code=200)
 
     raise HTTPException(status_code=403, detail="Forbidden. Verification token mismatch.")
@@ -30,13 +30,12 @@ def verify_whatsapp_webhook(
 @router.post("/whatsapp")
 async def process_whatsapp_webhook(request: Request) -> Dict[str, Any]:
     """
-    Handles incoming POST messages from WhatsApp Cloud API.
-    Extracts user's text message and echoes back text for test verification.
+    Handles incoming POST messages from WhatsApp Cloud API and routes to conversation_service.
     """
     try:
         body = await request.json()
+        supabase = get_supabase_client()
 
-        # Check if incoming payload contains a WhatsApp message entry
         entries = body.get("entry", [])
         for entry in entries:
             changes = entry.get("changes", [])
@@ -46,17 +45,26 @@ async def process_whatsapp_webhook(request: Request) -> Dict[str, Any]:
 
                 for msg in messages:
                     sender_phone = msg.get("from")
+                    msg_id = msg.get("id")
                     msg_type = msg.get("type")
 
-                    if msg_type == "text" and sender_phone:
-                        text_body = msg.get("text", {}).get("body", "")
+                    message_text = ""
+                    if msg_type == "text":
+                        message_text = msg.get("text", {}).get("body", "")
+                    elif msg_type == "interactive":
+                        # Support interactive button replies
+                        interactive = msg.get("interactive", {})
+                        reply = interactive.get("button_reply", {}) or interactive.get("list_reply", {})
+                        message_text = reply.get("title", "") or reply.get("id", "")
 
-                        # Echo test logic: Send back whatever text user sent
-                        echo_message = f"Echo: {text_body}"
-                        send_whatsapp_text(to_phone_number=sender_phone, message_text=echo_message)
+                    if sender_phone and message_text:
+                        handle_whatsapp_message(
+                            supabase=supabase,
+                            sender_phone=sender_phone,
+                            message_text=message_text,
+                            message_id=msg_id
+                        )
 
-        # Meta expects 200 OK response quickly
         return {"status": "ok"}
     except Exception as e:
-        # Always return 200 OK to Meta to avoid retry loop on unexpected payload structures
         return {"status": "ok", "error": str(e)}

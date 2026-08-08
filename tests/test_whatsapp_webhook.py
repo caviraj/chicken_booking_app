@@ -33,10 +33,12 @@ def test_whatsapp_verification_failure():
         assert "Verification token mismatch" in response.json()["detail"]
 
 
-@patch("app.webhooks.whatsapp_webhook.send_whatsapp_text")
-def test_whatsapp_post_echo_message(mock_send_text):
-    """Test POST webhook receives incoming text message and echoes it back."""
-    mock_send_text.return_value = {"status": "simulated"}
+@patch("app.webhooks.whatsapp_webhook.handle_whatsapp_message")
+@patch("app.webhooks.whatsapp_webhook.get_supabase_client")
+def test_whatsapp_post_echo_message(mock_get_client, mock_handle_msg):
+    """Test POST webhook receives incoming text message and calls handle_whatsapp_message."""
+    mock_get_client.return_value = MagicMock()
+    mock_handle_msg.return_value = {"status": "ok"}
 
     payload = {
         "object": "whatsapp_business_account",
@@ -68,7 +70,5 @@ def test_whatsapp_post_echo_message(mock_send_text):
     response = client.post("/webhooks/whatsapp", json=payload)
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    mock_send_text.assert_called_once_with(
-        to_phone_number="919876543210",
-        message_text="Echo: Hello Chicken Shop!"
-    )
+    mock_handle_msg.assert_called_once()
+
