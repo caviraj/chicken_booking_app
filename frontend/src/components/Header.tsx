@@ -33,6 +33,14 @@ export const Header: React.FC = () => {
 
       {/* Right controls */}
       <div className="flex items-center gap-3">
+        {/* Admin Link */}
+        <a
+          href="/admin/rates"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-semibold border border-amber-500/20 transition-all"
+        >
+          <span>Admin Panel</span>
+        </a>
+
         {/* Language Switcher */}
         <button
           onClick={toggleLanguage}
@@ -42,6 +50,7 @@ export const Header: React.FC = () => {
           <Languages className="w-4 h-4 text-orange-400" />
           <span>{currentLang === 'en' ? 'தமிழ்' : 'English'}</span>
         </button>
+
 
         {/* User Info & Logout */}
         {user && (

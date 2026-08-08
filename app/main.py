@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.booking import router as booking_router
+from app.admin_api.admin_routes import router as admin_router
 
 app = FastAPI(
     title="Meat Booking & Delivery API",
@@ -19,6 +20,8 @@ app.add_middleware(
 
 # Register API routers
 app.include_router(booking_router)
+app.include_router(admin_router)
+
 
 @app.get("/")
 def read_root():
