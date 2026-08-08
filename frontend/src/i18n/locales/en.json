@@ -1,0 +1,39 @@
+{
+  "header": {
+    "title": "Fresh Meat Booking",
+    "dashboard": "Dashboard",
+    "signOut": "Sign Out",
+    "language": "Language"
+  },
+  "auth": {
+    "welcomeTitle": "Welcome Back",
+    "welcomeSubtitle": "Sign in to book fresh meat delivery to your doorstep",
+    "googleSignIn": "Continue with Google",
+    "orContinueWithEmail": "Or continue with Email",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "name@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "John Doe",
+    "phoneNumberLabel": "Phone Number",
+    "phoneNumberPlaceholder": "+91 98765 43210",
+    "signInTab": "Sign In",
+    "signUpTab": "Register",
+    "signInBtn": "Sign In with Email",
+    "signUpBtn": "Create Account",
+    "verifyEmailNotice": "Please check your inbox to verify your email address before signing in.",
+    "rateLimited": "Too many failed attempts. Please wait 60 seconds before trying again.",
+    "invalidCredentials": "Invalid email or password. Please check your credentials.",
+    "loading": "Processing..."
+  },
+  "dashboard": {
+    "welcome": "Welcome, {{name}}!",
+    "profileInfo": "Customer Account Details",
+    "phone": "Phone",
+    "email": "Email",
+    "preferredLanguage": "Preferred Language",
+    "status": "Account Status",
+    "active": "Active Customer"
+  }
+}

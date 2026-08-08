@@ -1,0 +1,39 @@
+{
+  "header": {
+    "title": "பிரஷ் கறி முன்பதிவு",
+    "dashboard": "முகப்பு பலகை",
+    "signOut": "வெளியேறு",
+    "language": "மொழி"
+  },
+  "auth": {
+    "welcomeTitle": "மீண்டும் வருக!",
+    "welcomeSubtitle": "உங்கள் வீட்டு வாசலுக்கு புதிய கறி டெலிவரி பெற உள்நுழையவும்",
+    "googleSignIn": "கூகிள் மூலம் தொடரவும்",
+    "orContinueWithEmail": "அல்லது மின்னஞ்சல் மூலம் தொடரவும்",
+    "emailLabel": "மின்னஞ்சல் முகவரி",
+    "emailPlaceholder": "name@example.com",
+    "passwordLabel": "கடவுச்சொல்",
+    "passwordPlaceholder": "••••••••",
+    "fullNameLabel": "முழு பெயர்",
+    "fullNamePlaceholder": "இராம் குமார்",
+    "phoneNumberLabel": "தொலைபேசி எண்",
+    "phoneNumberPlaceholder": "+91 98765 43210",
+    "signInTab": "உள்நுழைவு",
+    "signUpTab": "பதிவு செய்ய",
+    "signInBtn": "மின்னஞ்சல் மூலம் உள்நுழைக",
+    "signUpBtn": "கணக்கை உருவாக்கவும்",
+    "verifyEmailNotice": "உள்நுழைவதற்கு முன் உங்கள் மின்னஞ்சல் சரிபார்ப்பு இணைப்பைச் சரிபார்க்கவும்.",
+    "rateLimited": "பல முறை தவறான முயற்சிகள். தயவுசெய்து 60 வினாடிகள் காத்திருக்கவும்.",
+    "invalidCredentials": "தவறான மின்னஞ்சல் அல்லது கடவுச்சொல்.",
+    "loading": "செயலாக்கப்படுகிறது..."
+  },
+  "dashboard": {
+    "welcome": "வரவேற்கிறோம், {{name}}!",
+    "profileInfo": "வாடிக்கையாளர் கணக்கு விவரங்கள்",
+    "phone": "தொலைபேசி",
+    "email": "மின்னஞ்சல்",
+    "preferredLanguage": "விருப்பமான மொழி",
+    "status": "கணக்கு நிலை",
+    "active": "செயலில் உள்ள வாடிக்கையாளர்"
+  }
+}
