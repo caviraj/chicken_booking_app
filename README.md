@@ -50,33 +50,6 @@ A full-stack, enterprise-grade dual-channel Fresh Meat Booking & Delivery Applic
 
 ---
 
-## ⚙️ Environment Variables Setup
-
-Create a `.env` file in the root directory:
-
-```ini
-# Supabase Configuration
-SUPABASE_URL=https://your-supabase-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-
-# Razorpay Payment Gateway Configuration
-ENVIRONMENT=development
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
-
-# Meta WhatsApp Cloud API Configuration
-WHATSAPP_VERIFY_TOKEN=your_custom_verify_token
-WHATSAPP_PHONE_NUMBER_ID=your_whatsapp_phone_number_id
-WHATSAPP_ACCESS_TOKEN=your_whatsapp_permanent_access_token
-
-# Distance Matrix APIs (Optional)
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-OPENROUTESERVICE_API_KEY=your_openrouteservice_api_key
-```
-
----
-
 ## 🗄️ Database Setup & Migrations
 
 Run all migration scripts located in `supabase/migrations/`:
