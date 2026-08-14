@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { verifyAdminUser } from '../../api/adminApi'
 import { Header } from '../../components/Header'
-import { ShieldAlert, Lock, Mail, AlertCircle, KeyRound } from 'lucide-react'
+import { ShieldAlert, Lock, Mail, AlertCircle, ShieldCheck } from 'lucide-react'
 
 export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate()
@@ -31,7 +31,6 @@ export const AdminLoginPage: React.FC = () => {
     setErrorMsg(null)
 
     try {
-      // 1. Authenticate via Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -42,7 +41,6 @@ export const AdminLoginPage: React.FC = () => {
       }
 
       if (data.user && data.user.email) {
-        // 2. Verify admin permissions
         const isAdmin = await verifyAdminUser(data.user.email)
         if (!isAdmin) {
           await supabase.auth.signOut()
@@ -58,56 +56,54 @@ export const AdminLoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
       <Header />
 
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md">
-          <div className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
+          <div className="pro-card p-6 sm:p-8 relative overflow-hidden shadow-lg border-2 border-slate-200">
             <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto mb-3">
                 <ShieldAlert className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-extrabold text-slate-100 tracking-tight">Admin Portal Sign In</h2>
-              <p className="text-xs text-slate-400 mt-1">Restricted access for Meat Shop Administrators</p>
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Admin Portal Sign In</h2>
+              <p className="text-xs text-slate-500 mt-1">Restricted access for Meat Shop Operations Management</p>
             </div>
 
             {errorMsg && (
-              <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-400 text-sm">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-800 text-xs font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             <form onSubmit={handleAdminSignIn} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Admin Email</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Admin Email</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@meatshop.com"
-                    className="w-full glass-input rounded-xl pl-10 pr-3.5 py-2.5 text-sm"
+                    className="w-full pro-input pl-9 text-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Password</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Admin Password</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full glass-input rounded-xl pl-10 pr-3.5 py-2.5 text-sm"
+                    className="w-full pro-input pl-9 text-xs"
                   />
                 </div>
               </div>
@@ -115,19 +111,19 @@ export const AdminLoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+                className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
-                {loading ? 'Authenticating...' : 'Sign In as Admin'}
+                {loading ? 'Authenticating...' : 'Sign In to Admin Console'}
               </button>
             </form>
           </div>
         </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
-        <p className="flex items-center justify-center gap-1.5">
-          <KeyRound className="w-4 h-4 text-amber-400" />
-          <span>Admin Access Controlled by admin_users Table RLS</span>
+      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p className="flex items-center justify-center gap-1.5 font-medium">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Restricted Admin Portal Protected by Row Level Security</span>
         </p>
       </footer>
     </div>

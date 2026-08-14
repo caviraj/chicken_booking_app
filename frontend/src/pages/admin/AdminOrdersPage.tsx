@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { Header } from '../../components/Header'
 import {
   fetchAdminOrders,
   updateOrderStatus,
@@ -17,13 +18,13 @@ import {
   AlertCircle,
   MessageSquare,
   Globe,
-  Printer
+  Printer,
+  X
 } from 'lucide-react'
-
 
 export const AdminOrdersPage: React.FC = () => {
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const adminEmail = user?.email || ''
 
   const [orders, setOrders] = useState<any[]>([])
@@ -70,7 +71,7 @@ export const AdminOrdersPage: React.FC = () => {
     setMsg(null)
     try {
       await updateOrderStatus(orderId, adminEmail, newStatus)
-      setMsg({ type: 'success', text: `Order ${orderId} updated to ${newStatus}.` })
+      setMsg({ type: 'success', text: `Order ${orderId} status changed to ${newStatus}.` })
       await loadOrders()
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || 'Failed to update order status.' })
@@ -85,7 +86,7 @@ export const AdminOrdersPage: React.FC = () => {
     setMsg(null)
     try {
       await updateOrderPaymentStatus(orderId, adminEmail, newPaymentStatus)
-      setMsg({ type: 'success', text: `Order ${orderId} payment status marked as ${newPaymentStatus}.` })
+      setMsg({ type: 'success', text: `Order ${orderId} payment status updated to ${newPaymentStatus}.` })
       await loadOrders()
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || 'Failed to update payment status.' })
@@ -95,81 +96,66 @@ export const AdminOrdersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-white">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <ShoppingBag className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="font-extrabold text-slate-100 text-lg tracking-tight">Admin Dashboard</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
+      <Header />
+
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        {/* Navigation & Title */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6 text-red-800" />
+              <span>Orders Management Matrix</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Manage incoming web & WhatsApp orders, status progression, and thermal label generation
+            </p>
           </div>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={() => navigate('/admin/rates')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
               Rates
             </button>
             <button
-              onClick={() => navigate('/admin/settings')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
-            >
-              Settings
-            </button>
-            <button
               onClick={() => navigate('/admin/orders')}
-              className="py-1.5 px-3 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold bg-red-800 text-white shadow-2xs"
             >
-              Orders
+              Orders Dashboard
             </button>
             <button
               onClick={() => navigate('/admin/delivery-zones')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
               Delivery Zones
             </button>
             <button
-              onClick={() => signOut()}
-              className="ml-3 py-1.5 px-3 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+              onClick={() => navigate('/admin/settings')}
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
-              Sign Out
+              Settings
+            </button>
+            <button
+              onClick={loadOrders}
+              className="ml-2 p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </nav>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6 text-amber-400" />
-              <span>Orders Management</span>
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              View and manage orders from both Website and WhatsApp sources
-            </p>
-          </div>
-
-          <button
-            onClick={loadOrders}
-            className="py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-800 flex items-center gap-2 transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
         </div>
 
         {/* Global Alert Notification */}
         {msg && (
           <div
-            className={`mb-6 p-4 rounded-xl border text-xs flex items-center gap-3 animate-in fade-in ${
+            className={`mb-6 p-3.5 rounded-xl border text-xs flex items-center gap-2.5 ${
               msg.type === 'error'
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                ? 'bg-red-50 border-red-200 text-red-800 font-medium'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
             }`}
           >
             {msg.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
@@ -178,36 +164,36 @@ export const AdminOrdersPage: React.FC = () => {
         )}
 
         {/* Filters Bar */}
-        <div className="glass-card rounded-2xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+        <div className="pro-card p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Delivery Date</label>
+            <label className="block text-slate-700 font-bold mb-1">Delivery Date</label>
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500"
+              className="w-full pro-input text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Source</label>
+            <label className="block text-slate-700 font-bold mb-1">Order Source Channel</label>
             <select
               value={filterSource}
               onChange={(e) => setFilterSource(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500"
+              className="w-full pro-input text-xs"
             >
-              <option value="">All Sources</option>
+              <option value="">All Channels (Web + WhatsApp)</option>
               <option value="website">Website</option>
-              <option value="whatsapp">WhatsApp</option>
+              <option value="whatsapp">WhatsApp Bot</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Order Status</label>
+            <label className="block text-slate-700 font-bold mb-1">Order Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500"
+              className="w-full pro-input text-xs"
             >
               <option value="">All Statuses</option>
               <option value="confirmed">Confirmed</option>
@@ -219,11 +205,11 @@ export const AdminOrdersPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">Payment Method</label>
+            <label className="block text-slate-700 font-bold mb-1">Payment Method</label>
             <select
               value={filterPayment}
               onChange={(e) => setFilterPayment(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500"
+              className="w-full pro-input text-xs"
             >
               <option value="">All Methods</option>
               <option value="online">Online Payment</option>
@@ -234,15 +220,15 @@ export const AdminOrdersPage: React.FC = () => {
 
         {/* Orders List */}
         {loading ? (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-400 font-medium">Loading orders...</span>
+          <div className="pro-card p-8 text-center">
+            <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <span className="text-xs text-slate-500 font-bold">Loading orders dataset...</span>
           </div>
         ) : orders.length === 0 ? (
-          <div className="glass-card rounded-3xl p-12 text-center text-slate-400">
-            <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-            <h3 className="text-base font-bold text-slate-300 mb-1">No Orders Found</h3>
-            <p className="text-xs text-slate-500">No orders match the selected filters.</p>
+          <div className="pro-card p-12 text-center text-slate-500">
+            <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+            <h3 className="text-base font-extrabold text-slate-800 mb-1">No Orders Found</h3>
+            <p className="text-xs text-slate-500">No orders match your selected filter criteria.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -256,48 +242,45 @@ export const AdminOrdersPage: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className="glass-card rounded-2xl p-5 sm:p-6 border border-slate-800/80 hover:border-slate-700 transition-all"
+                  className="pro-card p-5 sm:p-6 transition-all hover:border-red-800/30"
                 >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-xl shrink-0">
                         {meatEmoji}
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-slate-100 text-sm capitalize flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-900 text-sm capitalize flex items-center gap-2">
                           <span>{order.meat_type}</span>
-                          <span className="text-xs font-normal text-slate-400">({order.quantity_kg} kg)</span>
+                          <span className="text-xs font-semibold text-slate-500">({order.quantity_kg} kg)</span>
                         </h3>
-                        <span className="text-[11px] font-mono text-slate-500">ID: {order.id}</span>
+                        <span className="text-[11px] font-mono text-slate-400">ID: {order.id}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Source Badge */}
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold flex items-center gap-1 ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
                           isWhatsapp
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            ? 'badge-fresh'
+                            : 'bg-blue-50 text-blue-800 border border-blue-200'
                         }`}
                       >
                         {isWhatsapp ? <MessageSquare className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
                         <span className="capitalize">{order.source}</span>
                       </span>
 
-                      {/* Status Badge */}
-                      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <span className="badge-gold px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                         {order.order_status}
                       </span>
 
-                      {/* Payment Status Badge */}
                       <span
-                        className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           isPaid
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            ? 'badge-fresh'
                             : isCodPending
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'badge-crimson'
                         }`}
                       >
                         {isPaid ? 'Paid' : isCodPending ? 'COD Pending' : 'Pending Online'}
@@ -305,44 +288,41 @@ export const AdminOrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Body Details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-3 text-xs text-slate-300 border-b border-slate-800/80">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-3 text-xs text-slate-600 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Date: <strong className="text-slate-100">{order.delivery_date}</strong></span>
+                      <Calendar className="w-3.5 h-3.5 text-red-800 shrink-0" />
+                      <span>Date: <strong className="text-slate-900">{order.delivery_date}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Slot: <strong className="text-slate-100">{order.delivery_time_slot}</strong></span>
+                      <Clock className="w-3.5 h-3.5 text-red-800 shrink-0" />
+                      <span>Slot: <strong className="text-slate-900">{order.delivery_time_slot}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Package className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Cutting: <strong className="text-slate-100 capitalize">{order.cutting_type}</strong></span>
+                      <Package className="w-3.5 h-3.5 text-red-800 shrink-0" />
+                      <span>Cutting: <strong className="text-slate-900 capitalize">{order.cutting_type}</strong></span>
                     </div>
                   </div>
 
                   {order.delivery_address && (
-                    <div className="pt-2 pb-3 text-xs text-slate-400 flex items-start gap-2 border-b border-slate-800/80">
-                      <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                    <div className="pt-2 pb-3 text-xs text-slate-500 flex items-start gap-2 border-b border-slate-100">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                       <span className="truncate">{order.delivery_address}</span>
                     </div>
                   )}
 
-                  {/* Action Controls */}
                   <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <div className="text-xs font-bold text-slate-200">
-                      Total Amount: <span className="text-amber-400 text-sm">₹{order.grand_total}</span>
+                    <div className="text-xs font-bold text-slate-700">
+                      Total Amount: <span className="text-red-800 text-sm font-extrabold">₹{order.grand_total}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Advance Order Status Buttons */}
                       {order.order_status === 'confirmed' && (
                         <button
                           disabled={updatingId === order.id}
                           onClick={() => handleStatusChange(order.id, 'preparing')}
-                          className="py-1.5 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 font-bold text-xs transition-all"
+                          className="py-1.5 px-3 rounded-lg bg-amber-500 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
                         >
                           Mark Preparing
                         </button>
@@ -352,7 +332,7 @@ export const AdminOrdersPage: React.FC = () => {
                         <button
                           disabled={updatingId === order.id}
                           onClick={() => handleStatusChange(order.id, 'out_for_delivery')}
-                          className="py-1.5 px-3 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 font-bold text-xs transition-all"
+                          className="py-1.5 px-3 rounded-lg bg-blue-600 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
                         >
                           Mark Out for Delivery
                         </button>
@@ -362,32 +342,30 @@ export const AdminOrdersPage: React.FC = () => {
                         <button
                           disabled={updatingId === order.id}
                           onClick={() => handleStatusChange(order.id, 'delivered')}
-                          className="py-1.5 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold text-xs transition-all"
+                          className="py-1.5 px-3 rounded-lg bg-emerald-600 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
                         >
                           Mark Delivered
                         </button>
                       )}
 
-                      {/* Mark COD Paid Button */}
                       {isCodPending && (
                         <button
                           disabled={updatingId === order.id}
                           onClick={() => handlePaymentStatusChange(order.id, 'paid')}
-                          className="py-1.5 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all"
+                          className="py-1.5 px-3 rounded-lg bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
                         >
                           Mark COD Paid
                         </button>
                       )}
 
-                      {/* Print Package Label Action Button */}
                       <button
                         type="button"
                         onClick={() => printPackageLabel(order)}
-                        className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all"
-                        title="Print package thermal sticker label with QR Code"
+                        className="py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                        title="Print package thermal sticker label"
                       >
                         <Printer className="w-3.5 h-3.5" />
-                        <span>Print Label</span>
+                        <span>Print Sticker Label</span>
                       </button>
                     </div>
                   </div>
@@ -398,35 +376,42 @@ export const AdminOrdersPage: React.FC = () => {
         )}
       </main>
 
-      {/* Printable Package Label Modal / Secret Print Area */}
+      {/* Printable Package Label Modal */}
       {selectedPrintOrder && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white text-slate-900 max-w-sm w-full rounded-2xl p-6 shadow-2xl border border-slate-300">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white text-slate-900 max-w-sm w-full rounded-2xl p-6 shadow-2xl border border-slate-300 relative">
+            <button
+              onClick={() => setSelectedPrintOrder(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div className="text-center border-b pb-3 mb-3">
-              <h3 className="text-lg font-black tracking-tight uppercase">FRESH MEAT SHOP</h3>
-              <p className="text-[10px] text-slate-600">PACKAGE IDENTIFICATION STICKER</p>
+              <h3 className="text-base font-extrabold tracking-tight text-red-800 uppercase">FRESH MEAT EXPRESS</h3>
+              <p className="text-[10px] font-bold text-slate-500">PACKAGE THERMAL PRINT STICKER</p>
             </div>
 
             <div className="space-y-2 text-xs mb-4">
               <div className="flex justify-between border-b pb-1">
-                <span className="font-semibold text-slate-500">Order Ref:</span>
+                <span className="font-semibold text-slate-500">Order ID:</span>
                 <span className="font-mono font-bold text-slate-900">{selectedPrintOrder.id}</span>
               </div>
 
               <div className="flex justify-between border-b pb-1">
-                <span className="font-semibold text-slate-500">Meat & Weight:</span>
+                <span className="font-semibold text-slate-500">Meat Item:</span>
                 <span className="font-bold text-slate-900 uppercase">
                   {selectedPrintOrder.meat_type} ({selectedPrintOrder.quantity_kg} kg)
                 </span>
               </div>
 
               <div className="flex justify-between border-b pb-1">
-                <span className="font-semibold text-slate-500">Cutting Type:</span>
+                <span className="font-semibold text-slate-500">Cutting Style:</span>
                 <span className="font-bold text-slate-900 capitalize">{selectedPrintOrder.cutting_type}</span>
               </div>
 
               <div className="flex justify-between border-b pb-1">
-                <span className="font-semibold text-slate-500">Delivery Date/Slot:</span>
+                <span className="font-semibold text-slate-500">Date/Slot:</span>
                 <span className="font-semibold text-slate-900">
                   {selectedPrintOrder.delivery_date} ({selectedPrintOrder.delivery_time_slot})
                 </span>
@@ -439,20 +424,17 @@ export const AdminOrdersPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between pt-1 font-bold text-sm">
-                <span>Amount & Status:</span>
-                <span>
-                  ₹{selectedPrintOrder.grand_total} ({selectedPrintOrder.payment_status.toUpperCase()})
-                </span>
+              <div className="flex justify-between pt-1 font-extrabold text-xs text-red-800">
+                <span>Amount:</span>
+                <span>₹{selectedPrintOrder.grand_total} ({selectedPrintOrder.payment_status.toUpperCase()})</span>
               </div>
             </div>
 
-            {/* QR Code */}
             <div className="text-center pt-2 border-t">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=ORDER:${selectedPrintOrder.id}`}
                 alt="Order QR Code"
-                className="w-24 h-24 mx-auto mb-2 border p-1 rounded"
+                className="w-24 h-24 mx-auto mb-2 border p-1 rounded-lg"
               />
               <span className="text-[10px] font-mono text-slate-500">SCAN TO VERIFY ORDER DETAILS</span>
             </div>
@@ -460,13 +442,13 @@ export const AdminOrdersPage: React.FC = () => {
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => setSelectedPrintOrder(null)}
-                className="flex-1 py-2 rounded-xl bg-slate-200 text-slate-800 font-bold text-xs"
+                className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs cursor-pointer"
               >
                 Close
               </button>
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-2 rounded-xl bg-amber-500 text-white font-bold text-xs shadow-md"
+                className="flex-1 py-2 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
               >
                 Print Label
               </button>
@@ -477,4 +459,3 @@ export const AdminOrdersPage: React.FC = () => {
     </div>
   )
 }
-

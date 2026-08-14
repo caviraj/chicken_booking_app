@@ -2,36 +2,129 @@
 
 @layer base {
   :root {
+    --color-primary: #991B1B;
+    --color-primary-light: #DC2626;
+    --color-secondary: #059669;
+    --color-highlight: #F59E0B;
+    --color-dark: #0F172A;
+    --color-light: #F8FAFC;
+    --color-surface: #FFFFFF;
+    
     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   
   body {
     font-family: var(--font-sans);
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: var(--color-light);
+    color: var(--color-dark);
     min-height: 100vh;
     margin: 0;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* Glassmorphism card utilities */
-.glass-card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+/* Card & Surface utilities */
+.pro-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-input {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+.pro-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pro-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 30px -10px rgba(153, 27, 27, 0.08), 0 10px 15px -5px rgba(153, 27, 27, 0.04);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+/* Glass & Elevated overlay */
+.pro-glass {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(241, 245, 249, 0.8);
+}
+
+.pro-dark-card {
+  background: #0f172a;
   color: #f8fafc;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
+}
+
+/* Inputs & Form controls */
+.pro-input {
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
   transition: all 0.2s ease-in-out;
 }
 
-.glass-input:focus {
+.pro-input:focus {
   outline: none;
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+/* Buttons & Badges */
+.btn-primary {
+  background-color: #991b1b;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 12px rgba(153, 27, 27, 0.25);
+}
+
+.btn-primary:hover {
+  background-color: #dc2626;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.badge-fresh {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-crimson {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-gold {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

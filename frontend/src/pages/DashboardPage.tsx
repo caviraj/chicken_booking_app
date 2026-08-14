@@ -4,107 +4,104 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 import { Header } from '../components/Header'
-import { User, Mail, Phone, Globe, ShieldCheck, ShoppingBag } from 'lucide-react'
+import { User, Mail, Phone, Globe, ShieldCheck, ShoppingBag, ArrowRight } from 'lucide-react'
 
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, customer } = useAuth()
 
-
   const displayName = customer?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Valued Customer'
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
       <Header />
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         {/* Welcome banner */}
-        <div className="glass-card rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-500/10 to-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
-
+        <div className="pro-card p-6 sm:p-8 mb-8 relative overflow-hidden bg-gradient-to-r from-slate-900 to-slate-800 text-white">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20 mb-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30 mb-3">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                {t('dashboard.active')}
+                {t('dashboard.active') || 'Verified Account'}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-                {t('dashboard.welcome', { name: displayName })}
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {t('dashboard.welcome', { name: displayName }) || `Welcome back, ${displayName}`}
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
-                Your account is active. Click below to start booking fresh meat.
+              <p className="text-xs text-slate-300 mt-1">
+                Your account is active. Order daily fresh meat with custom cuts and morning delivery.
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <button
                   type="button"
                   onClick={() => navigate('/booking')}
-                  className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 flex items-center gap-2 transition-all hover:scale-105"
+                  className="py-2.5 px-5 rounded-xl bg-red-800 hover:bg-red-600 text-white font-bold text-xs shadow-md flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>{t('dashboard.startBooking')}</span>
+                  <span>{t('dashboard.startBooking') || 'Start Booking Meat'}</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
-              <ShoppingBag className="w-7 h-7 text-slate-950" />
+            <div className="w-16 h-16 rounded-2xl bg-red-800 text-white flex items-center justify-center shadow-lg shrink-0">
+              <ShoppingBag className="w-8 h-8" />
             </div>
           </div>
         </div>
 
         {/* Customer Profile Details Card */}
-        <div className="glass-card rounded-2xl p-6 sm:p-8">
-          <h3 className="text-lg font-bold text-slate-100 mb-6 flex items-center gap-2">
-            <User className="w-5 h-5 text-orange-400" />
-            <span>{t('dashboard.profileInfo')}</span>
+        <div className="pro-card p-6 sm:p-8">
+          <h3 className="text-lg font-extrabold text-slate-900 mb-6 flex items-center gap-2">
+            <User className="w-5 h-5 text-red-800" />
+            <span>{t('dashboard.profileInfo') || 'Customer Profile Details'}</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Email */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-medium block">{t('dashboard.email')}</span>
-                <span className="text-sm font-semibold text-slate-200">{customer?.email || user?.email || 'N/A'}</span>
+                <span className="text-[11px] text-slate-500 font-bold block">{t('dashboard.email') || 'Email Address'}</span>
+                <span className="text-xs font-bold text-slate-900">{customer?.email || user?.email || 'N/A'}</span>
               </div>
             </div>
 
             {/* Phone */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <Phone className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-medium block">{t('dashboard.phone')}</span>
-                <span className="text-sm font-semibold text-slate-200">{customer?.phone_number || user?.phone || 'Not provided'}</span>
+                <span className="text-[11px] text-slate-500 font-bold block">{t('dashboard.phone') || 'Phone Number'}</span>
+                <span className="text-xs font-bold text-slate-900">{customer?.phone_number || user?.phone || 'Not provided'}</span>
               </div>
             </div>
 
             {/* Preferred Language */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <Globe className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-medium block">{t('dashboard.preferredLanguage')}</span>
-                <span className="text-sm font-semibold text-slate-200">
+                <span className="text-[11px] text-slate-500 font-bold block">{t('dashboard.preferredLanguage') || 'Language'}</span>
+                <span className="text-xs font-bold text-slate-900">
                   {customer?.preferred_language === 'ta' ? 'தமிழ் (Tamil)' : 'English'}
                 </span>
               </div>
             </div>
 
             {/* Customer ID */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs text-slate-400 font-medium block">Customer Database ID</span>
-                <span className="text-xs font-mono font-medium text-slate-300 truncate max-w-[200px] block">
+                <span className="text-[11px] text-slate-500 font-bold block">Customer ID</span>
+                <span className="text-xs font-mono font-bold text-slate-800 truncate max-w-[200px] block">
                   {customer?.id || 'Syncing...'}
                 </span>
               </div>
@@ -113,8 +110,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
-        <p>Fresh Meat Booking & Delivery System — Phase 3 Auth Dashboard</p>
+      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p className="font-medium">FreshMeat Express • Customer Account Portal</p>
       </footer>
     </div>
   )

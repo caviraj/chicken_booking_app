@@ -9,6 +9,19 @@ CREATE TABLE IF NOT EXISTS public.stock_limits (
     CONSTRAINT unique_meat_date UNIQUE(meat_type, effective_date)
 );
 
+-- Enable Row Level Security (RLS) for Security
+ALTER TABLE public.stock_limits ENABLE ROW LEVEL SECURITY;
+
+-- Read policy for all users
+CREATE POLICY "Allow read access to stock_limits"
+    ON public.stock_limits FOR SELECT
+    USING (true);
+
+-- Admin & Service Role full access policy
+CREATE POLICY "Allow service role full access to stock_limits"
+    ON public.stock_limits FOR ALL
+    USING (true);
+
 -- Default stock limits per meat type
 INSERT INTO public.stock_limits (meat_type, limit_kg, effective_date)
 VALUES 

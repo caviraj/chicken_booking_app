@@ -14,9 +14,9 @@ import {
   CheckCircle2,
   RefreshCw,
   XCircle,
-  Truck
+  Truck,
+  Plus
 } from 'lucide-react'
-
 
 export const OrderHistoryPage: React.FC = () => {
   const { t } = useTranslation()
@@ -49,7 +49,6 @@ export const OrderHistoryPage: React.FC = () => {
     loadOrders()
   }, [customerId])
 
-  // Check if an order is eligible for cancellation (before cutoff time)
   const canCancelOrder = (order: any): boolean => {
     if (order.order_status === 'cancelled' || order.order_status === 'delivered' || order.order_status === 'completed') {
       return false
@@ -58,15 +57,13 @@ export const OrderHistoryPage: React.FC = () => {
     const todayStr = new Date().toISOString().split('T')[0]
     const delivDate = order.delivery_date
 
-    // Future dates can be cancelled
     if (delivDate > todayStr) {
       return true
     }
 
-    // Today's dates can be cancelled before cutoff (e.g. 20:00)
     if (delivDate === todayStr) {
       const now = new Date()
-      const cutoffHour = 20 // 20:00 cutoff
+      const cutoffHour = 20
       if (now.getHours() < cutoffHour) {
         return true
       }
@@ -82,16 +79,15 @@ export const OrderHistoryPage: React.FC = () => {
 
     try {
       await cancelCustomerOrder(orderId, customerId)
-      setMsg({ type: 'success', text: t('orders.orderCancelled') })
+      setMsg({ type: 'success', text: t('orders.orderCancelled') || 'Order cancelled successfully.' })
       await loadOrders()
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || 'Failed to cancel order.' })
-    } fontally: {
+    } finally {
       setCancellingId(null)
     }
   }
 
-  // Filtered orders list
   const filteredOrders = orders.filter((o) => {
     const status = (o.order_status || '').toLowerCase()
     if (tab === 'active') {
@@ -103,34 +99,35 @@ export const OrderHistoryPage: React.FC = () => {
     if (tab === 'cancelled') {
       return status === 'cancelled'
     }
-    return true // 'all'
+    return true
   })
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-between selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
       <Header />
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         {/* Page Title */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
           <div>
-            <h2 className="text-2xl font-extrabold text-slate-100 tracking-tight flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6 text-orange-400" />
-              <span>{t('orders.title')}</span>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6 text-red-800" />
+              <span>{t('orders.title') || 'My Meat Orders'}</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">{t('orders.subtitle')}</p>
+            <p className="text-xs text-slate-500 mt-1">{t('orders.subtitle') || 'Track live status or cancel orders before cutoff time'}</p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/booking')}
-              className="py-2 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs shadow-lg shadow-orange-500/20 hover:scale-105 transition-all"
+              className="py-2 px-4 rounded-xl btn-primary text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
-              + New Booking
+              <Plus className="w-4 h-4" />
+              <span>New Booking</span>
             </button>
             <button
               onClick={loadOrders}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all"
+              className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-all cursor-pointer"
               title="Refresh"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -143,8 +140,8 @@ export const OrderHistoryPage: React.FC = () => {
           <div
             className={`mb-6 p-4 rounded-xl border text-xs flex items-center gap-3 animate-in fade-in ${
               msg.type === 'error'
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
             }`}
           >
             {msg.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
@@ -153,47 +150,47 @@ export const OrderHistoryPage: React.FC = () => {
         )}
 
         {/* Filter Tabs */}
-        <div className="grid grid-cols-4 p-1 bg-slate-900/80 rounded-2xl border border-slate-800 text-xs font-semibold text-slate-400 mb-8">
+        <div className="grid grid-cols-4 p-1 bg-slate-200 rounded-2xl text-xs font-bold text-slate-700 mb-8">
           <button
             onClick={() => setTab('all')}
-            className={`py-2.5 rounded-xl transition-all ${tab === 'all' ? 'bg-orange-500 text-white shadow-md' : 'hover:text-slate-200'}`}
+            className={`py-2 rounded-xl transition-all cursor-pointer ${tab === 'all' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
           >
-            {t('orders.allTab')} ({orders.length})
+            {t('orders.allTab') || 'All'} ({orders.length})
           </button>
           <button
             onClick={() => setTab('active')}
-            className={`py-2.5 rounded-xl transition-all ${tab === 'active' ? 'bg-orange-500 text-white shadow-md' : 'hover:text-slate-200'}`}
+            className={`py-2 rounded-xl transition-all cursor-pointer ${tab === 'active' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
           >
-            {t('orders.activeTab')}
+            {t('orders.activeTab') || 'Active'}
           </button>
           <button
             onClick={() => setTab('past')}
-            className={`py-2.5 rounded-xl transition-all ${tab === 'past' ? 'bg-orange-500 text-white shadow-md' : 'hover:text-slate-200'}`}
+            className={`py-2 rounded-xl transition-all cursor-pointer ${tab === 'past' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
           >
-            {t('orders.pastTab')}
+            {t('orders.pastTab') || 'Past'}
           </button>
           <button
             onClick={() => setTab('cancelled')}
-            className={`py-2.5 rounded-xl transition-all ${tab === 'cancelled' ? 'bg-orange-500 text-white shadow-md' : 'hover:text-slate-200'}`}
+            className={`py-2 rounded-xl transition-all cursor-pointer ${tab === 'cancelled' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
           >
-            {t('orders.cancelledTab')}
+            {t('orders.cancelledTab') || 'Cancelled'}
           </button>
         </div>
 
         {/* Orders List */}
         {loading ? (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-400 font-medium">Loading your orders...</span>
+          <div className="pro-card p-8 text-center">
+            <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <span className="text-xs text-slate-500 font-bold">Fetching your order history...</span>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="glass-card rounded-3xl p-12 text-center">
-            <ShoppingBag className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-300 mb-1">{t('orders.noOrders')}</h3>
-            <p className="text-xs text-slate-500 mb-6">Explore our fresh meat options and place your order today.</p>
+          <div className="pro-card p-12 text-center">
+            <ShoppingBag className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <h3 className="text-base font-extrabold text-slate-800 mb-1">{t('orders.noOrders') || 'No orders found'}</h3>
+            <p className="text-xs text-slate-500 mb-6">Select your fresh meat items and place an order.</p>
             <button
               onClick={() => navigate('/booking')}
-              className="py-2.5 px-5 rounded-xl bg-orange-500 text-white font-bold text-xs shadow-lg shadow-orange-500/20"
+              className="py-2.5 px-5 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
             >
               Start Booking
             </button>
@@ -211,46 +208,44 @@ export const OrderHistoryPage: React.FC = () => {
               return (
                 <div
                   key={order.id}
-                  className={`glass-card rounded-2xl p-5 sm:p-6 transition-all duration-200 border ${
-                    isCancelled ? 'border-rose-500/20 opacity-75' : 'border-slate-800/80 hover:border-slate-700'
+                  className={`pro-card p-5 sm:p-6 transition-all border ${
+                    isCancelled ? 'opacity-70 bg-slate-50' : 'hover:border-red-800/40'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-800/80">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-2xl shrink-0">
                         {meatEmoji}
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-slate-100 text-base capitalize flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-900 text-base capitalize flex items-center gap-2">
                           <span>{order.meat_type}</span>
-                          <span className="text-xs font-normal text-slate-400">({order.quantity_kg} kg)</span>
+                          <span className="text-xs font-semibold text-slate-500">({order.quantity_kg} kg)</span>
                         </h3>
-                        <span className="text-[11px] font-mono text-slate-500">ID: {order.id}</span>
+                        <span className="text-[11px] font-mono text-slate-400">ID: {order.id}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {/* Order Status Badge */}
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           isCancelled
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            ? 'badge-crimson'
                             : order.order_status === 'delivered'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                            ? 'badge-fresh'
+                            : 'badge-gold'
                         }`}
                       >
                         {order.order_status}
                       </span>
 
-                      {/* Payment Status Badge */}
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           isPaid
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            ? 'badge-fresh'
                             : isCodPending
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'badge-gold'
                         }`}
                       >
                         {isPaid ? 'Paid' : isCodPending ? 'COD Pending' : 'Pending Online'}
@@ -258,62 +253,57 @@ export const OrderHistoryPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Order Details Body */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-4 text-xs text-slate-300 border-b border-slate-800/80">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-4 text-xs text-slate-600 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-orange-400 shrink-0" />
-                      <span>Delivery: <strong className="text-slate-100">{order.delivery_date}</strong></span>
+                      <Calendar className="w-4 h-4 text-red-800 shrink-0" />
+                      <span>Date: <strong className="text-slate-900">{order.delivery_date}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-orange-400 shrink-0" />
-                      <span>Slot: <strong className="text-slate-100">{order.delivery_time_slot}</strong></span>
+                      <Clock className="w-4 h-4 text-red-800 shrink-0" />
+                      <span>Slot: <strong className="text-slate-900">{order.delivery_time_slot}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-orange-400 shrink-0" />
-                      <span>Cutting: <strong className="text-slate-100 capitalize">{order.cutting_type}</strong></span>
+                      <Truck className="w-4 h-4 text-red-800 shrink-0" />
+                      <span>Cutting: <strong className="text-slate-900 capitalize">{order.cutting_type}</strong></span>
                     </div>
                   </div>
 
                   {order.delivery_address && (
-                    <div className="pt-3 pb-3 text-xs text-slate-400 flex items-start gap-2 border-b border-slate-800/80">
-                      <MapPin className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                    <div className="pt-3 pb-3 text-xs text-slate-500 flex items-start gap-2 border-b border-slate-100">
+                      <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                       <span className="truncate">{order.delivery_address}</span>
                     </div>
                   )}
 
-                  {/* Card Footer Actions */}
                   <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <div className="text-sm font-bold text-slate-100">
-                      Grand Total: <span className="text-orange-400">₹{order.grand_total}</span>
+                    <div className="text-sm font-extrabold text-slate-900">
+                      Total: <span className="text-red-800">₹{order.grand_total}</span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Pay via Razorpay button if online pending */}
                       {!isPaid && order.payment_method === 'online' && !isCancelled && (
                         <a
                           href={order.razorpay_payment_link || `/order-confirmation/${order.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="py-2 px-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all"
+                          className="py-2 px-3.5 rounded-xl bg-red-800 hover:bg-red-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <span>{t('orders.payNow', { amount: order.grand_total })}</span>
+                          <span>Pay ₹{order.grand_total}</span>
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
 
-                      {/* Pre-cutoff Cancel Order Button */}
                       {canCancel && (
                         <button
                           type="button"
                           disabled={cancellingId === order.id}
                           onClick={() => handleCancelOrder(order.id)}
-                          className="py-2 px-3.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs border border-rose-500/20 flex items-center gap-1.5 transition-all disabled:opacity-50"
-                          title={t('orders.cancelNotice')}
+                          className="py-2 px-3.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 font-bold text-xs border border-red-200 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         >
                           <XCircle className="w-3.5 h-3.5" />
-                          <span>{cancellingId === order.id ? t('orders.cancelling') : t('orders.cancelOrder')}</span>
+                          <span>{cancellingId === order.id ? 'Cancelling...' : 'Cancel Order'}</span>
                         </button>
                       )}
                     </div>
@@ -325,8 +315,8 @@ export const OrderHistoryPage: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
-        <p>Fresh Meat Booking System — Phase 7 Customer Order History</p>
+      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p className="font-medium">FreshMeat Express Customer Order Portal</p>
       </footer>
     </div>
   )

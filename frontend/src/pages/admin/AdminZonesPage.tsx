@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { Header } from '../../components/Header'
 import {
   fetchAdminDeliveryZones,
   createDeliveryZone,
@@ -14,7 +15,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  RefreshCw,
   CheckCircle2,
   AlertCircle,
   X
@@ -22,7 +22,7 @@ import {
 
 export const AdminZonesPage: React.FC = () => {
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const adminEmail = user?.email || ''
 
   const [zones, setZones] = useState<any[]>([])
@@ -119,89 +119,66 @@ export const AdminZonesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-white">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Truck className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="font-extrabold text-slate-100 text-lg tracking-tight">Admin Dashboard</h1>
-          </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
+      <Header />
 
-          <nav className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/admin/rates')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
-            >
-              Rates
-            </button>
-            <button
-              onClick={() => navigate('/admin/settings')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
-            >
-              Settings
-            </button>
-            <button
-              onClick={() => navigate('/admin/orders')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
-            >
-              Orders
-            </button>
-            <button
-              onClick={() => navigate('/admin/delivery-zones')}
-              className="py-1.5 px-3 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 transition-all"
-            >
-              Delivery Zones
-            </button>
-            <button
-              onClick={() => signOut()}
-              className="ml-3 py-1.5 px-3 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
-            >
-              Sign Out
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        
+        {/* Navigation & Title */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <Truck className="w-6 h-6 text-amber-400" />
-              <span>Delivery Zones CRUD</span>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <Truck className="w-6 h-6 text-red-800" />
+              <span>Delivery Distance Fee Zones</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Configure distance bands and delivery charge fallbacks
-            </p>
+            <p className="text-xs text-slate-500 mt-1">Configure distance thresholds (km) and delivery fee structures</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={openCreateModal}
-              className="py-2 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105"
+              className="py-2 px-4 rounded-xl btn-primary text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Zone</span>
             </button>
-            <button
-              onClick={loadZones}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            
+            <nav className="flex items-center gap-1">
+              <button
+                onClick={() => navigate('/admin/rates')}
+                className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Rates
+              </button>
+              <button
+                onClick={() => navigate('/admin/orders')}
+                className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Orders
+              </button>
+              <button
+                onClick={() => navigate('/admin/delivery-zones')}
+                className="py-1.5 px-3 rounded-lg text-xs font-bold bg-red-800 text-white shadow-2xs"
+              >
+                Zones
+              </button>
+              <button
+                onClick={() => navigate('/admin/settings')}
+                className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Settings
+              </button>
+            </nav>
           </div>
         </div>
 
         {/* Global Alert Notification */}
         {msg && (
           <div
-            className={`mb-6 p-4 rounded-xl border text-xs flex items-center gap-3 animate-in fade-in ${
+            className={`mb-6 p-3.5 rounded-xl border text-xs flex items-center gap-2.5 ${
               msg.type === 'error'
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                ? 'bg-red-50 border-red-200 text-red-800 font-medium'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
             }`}
           >
             {msg.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
@@ -211,26 +188,26 @@ export const AdminZonesPage: React.FC = () => {
 
         {/* Delivery Zones Table */}
         {loading ? (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-400 font-medium">Loading delivery zones...</span>
+          <div className="pro-card p-8 text-center">
+            <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <span className="text-xs text-slate-500 font-bold">Loading delivery distance zones...</span>
           </div>
         ) : zones.length === 0 ? (
-          <div className="glass-card rounded-3xl p-12 text-center text-slate-400">
-            <Truck className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-            <h3 className="text-base font-bold text-slate-300 mb-1">No Delivery Zones Configured</h3>
-            <p className="text-xs text-slate-500 mb-4">Add delivery zones to enable distance-based fee fallbacks.</p>
+          <div className="pro-card p-12 text-center text-slate-500">
+            <Truck className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+            <h3 className="text-base font-extrabold text-slate-800 mb-1">No Delivery Zones Configured</h3>
+            <p className="text-xs text-slate-500 mb-4">Add distance zones to handle fallback delivery fee calculation.</p>
             <button
               onClick={openCreateModal}
-              className="py-2 px-4 rounded-xl bg-amber-500 text-white font-bold text-xs"
+              className="py-2 px-4 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
             >
               Add First Zone
             </button>
           </div>
         ) : (
-          <div className="glass-card rounded-2xl overflow-hidden border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-900/90 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+          <div className="pro-card overflow-hidden">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="py-3.5 px-4">Zone Name</th>
                   <th className="py-3.5 px-4">Max Distance (km)</th>
@@ -239,18 +216,18 @@ export const AdminZonesPage: React.FC = () => {
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-200">
                 {zones.map((zone) => (
-                  <tr key={zone.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-100">{zone.zone_name}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-300">{zone.max_distance_km} km</td>
-                    <td className="py-3.5 px-4 font-bold text-amber-400">₹{zone.delivery_charge}</td>
+                  <tr key={zone.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3.5 px-4 font-extrabold text-slate-900">{zone.zone_name}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{zone.max_distance_km} km</td>
+                    <td className="py-3.5 px-4 font-extrabold text-red-800">₹{zone.delivery_charge}</td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           zone.is_active
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            ? 'badge-fresh'
+                            : 'badge-crimson'
                         }`}
                       >
                         {zone.is_active ? 'Active' : 'Inactive'}
@@ -259,14 +236,14 @@ export const AdminZonesPage: React.FC = () => {
                     <td className="py-3.5 px-4 text-right space-x-2">
                       <button
                         onClick={() => openEditModal(zone)}
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
                         title="Edit Zone"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(zone.id)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all"
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-800 transition-all cursor-pointer"
                         title="Delete Zone"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -282,37 +259,37 @@ export const AdminZonesPage: React.FC = () => {
 
       {/* Add / Edit Delivery Zone Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="glass-card max-w-md w-full rounded-3xl p-6 sm:p-8 relative">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white text-slate-900 max-w-md w-full rounded-2xl p-6 sm:p-8 relative shadow-2xl border border-slate-200">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-200"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-bold text-slate-100 mb-1">
+            <h3 className="text-xl font-extrabold text-slate-900 mb-1">
               {editingZone ? 'Edit Delivery Zone' : 'Add Delivery Zone'}
             </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Specify max distance limit and fallback charge
+            <p className="text-xs text-slate-500 mb-6">
+              Define distance radius limit and fee structure
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Zone Name</label>
+                <label className="block text-slate-700 font-bold mb-1">Zone Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Zone A (0-5 km)"
                   value={zoneName}
                   onChange={(e) => setZoneName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                  className="w-full pro-input text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Max Distance (km)</label>
+                <label className="block text-slate-700 font-bold mb-1">Max Distance (km)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -320,12 +297,12 @@ export const AdminZonesPage: React.FC = () => {
                   placeholder="5.0"
                   value={maxDistance}
                   onChange={(e) => setMaxDistance(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                  className="w-full pro-input text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Delivery Charge (₹)</label>
+                <label className="block text-slate-700 font-bold mb-1">Delivery Fee (₹)</label>
                 <input
                   type="number"
                   step="1"
@@ -333,7 +310,7 @@ export const AdminZonesPage: React.FC = () => {
                   placeholder="30"
                   value={deliveryCharge}
                   onChange={(e) => setDeliveryCharge(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                  className="w-full pro-input text-xs"
                 />
               </div>
 
@@ -343,10 +320,10 @@ export const AdminZonesPage: React.FC = () => {
                   id="isActive"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 rounded accent-amber-500"
+                  className="w-4 h-4 rounded accent-red-800 cursor-pointer"
                 />
-                <label htmlFor="isActive" className="text-slate-300 font-semibold cursor-pointer">
-                  Zone Active
+                <label htmlFor="isActive" className="text-slate-800 font-bold cursor-pointer">
+                  Zone Active Status
                 </label>
               </div>
 
@@ -354,16 +331,16 @@ export const AdminZonesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold"
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold shadow-lg shadow-amber-500/20"
+                  className="flex-1 py-2.5 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  {saving ? 'Saving...' : 'Save Zone'}
+                  {saving ? 'Saving Zone...' : 'Save Zone'}
                 </button>
               </div>
             </form>

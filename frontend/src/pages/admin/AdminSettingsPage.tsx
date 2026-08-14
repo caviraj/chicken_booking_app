@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { fetchAdminSettings, updateAdminSettings, type AdminSettings } from '../../api/adminApi'
+import { Header } from '../../components/Header'
 import { Settings, Clock, MapPin, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react'
-
 
 export const AdminSettingsPage: React.FC = () => {
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
 
   const [settings, setSettings] = useState<AdminSettings>({
     order_cutoff_time: '20:00',
@@ -59,7 +59,7 @@ export const AdminSettingsPage: React.FC = () => {
         is_cleaning_day: Boolean(settings.is_cleaning_day)
       })
 
-      setSuccessMsg('Admin settings saved successfully!')
+      setSuccessMsg('Operational settings saved successfully!')
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to save admin settings')
     } finally {
@@ -68,156 +68,142 @@ export const AdminSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-white">
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Settings className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="font-extrabold text-slate-100 text-lg tracking-tight">Admin Dashboard</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
+      <Header />
+
+      {/* Main Content */}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        {/* Navigation & Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+              <Settings className="w-6 h-6 text-red-800" />
+              <span>Operational Settings</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">Configure daily order cutoff times, stock thresholds, and shop coordinates</p>
           </div>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1">
             <button
               onClick={() => navigate('/admin/rates')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
               Rates
             </button>
             <button
-              onClick={() => navigate('/admin/settings')}
-              className="py-1.5 px-3 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 transition-all"
-            >
-              Settings
-            </button>
-            <button
               onClick={() => navigate('/admin/orders')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
               Orders
             </button>
             <button
               onClick={() => navigate('/admin/delivery-zones')}
-              className="py-1.5 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all"
+              className="py-1.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
             >
-              Delivery Zones
+              Zones
             </button>
             <button
-              onClick={() => signOut()}
-              className="ml-3 py-1.5 px-3 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+              onClick={() => navigate('/admin/settings')}
+              className="py-1.5 px-3 rounded-lg text-xs font-bold bg-red-800 text-white shadow-2xs"
             >
-              Sign Out
+              Settings
+            </button>
+            <button
+              onClick={loadSettings}
+              className="ml-2 p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-all cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </nav>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <Settings className="w-6 h-6 text-amber-400" />
-              <span>Operational Settings</span>
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">Manage cutoff times, stock limits, and shop coordinates</p>
-          </div>
-
-          <button
-            onClick={loadSettings}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
 
         {/* Status Alerts */}
         {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-3">
+          <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-medium flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
         {successMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-3">
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2.5">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="glass-card rounded-3xl p-8 text-center">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-400 font-medium">Loading operational settings...</span>
+          <div className="pro-card p-8 text-center">
+            <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <span className="text-xs text-slate-500 font-bold">Loading operational parameters...</span>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Cutoff & Stock Section */}
-            <div className="glass-card rounded-2xl p-6 border border-slate-800">
-              <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>Cutoff Rules & Stock Limits</span>
+            <div className="pro-card p-6">
+              <h3 className="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-red-800" />
+                <span>Daily Cutoff Rules & Stock Controls</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Daily Order Cutoff Time</label>
+                  <label className="block text-slate-700 font-bold mb-1">Daily Order Cutoff Time</label>
                   <input
                     type="time"
                     required
                     value={settings.order_cutoff_time}
                     onChange={(e) => setSettings({ ...settings, order_cutoff_time: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full pro-input text-xs"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">Same-day orders closed after this time</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Order cancellations and same-day bookings restricted after cutoff</p>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Daily Stock Limit (kg)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Daily Stock Limit (kg)</label>
                   <input
                     type="number"
                     step="0.5"
                     required
                     value={settings.daily_stock_limit_kg}
                     onChange={(e) => setSettings({ ...settings, daily_stock_limit_kg: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full pro-input text-xs"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">Maximum combined kg allowed per delivery date</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Maximum stock capacity per delivery day</p>
                 </div>
               </div>
             </div>
 
             {/* Shop Coordinates Section */}
-            <div className="glass-card rounded-2xl p-6 border border-slate-800">
-              <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-400" />
-                <span>Shop Location Coordinates</span>
+            <div className="pro-card p-6">
+              <h3 className="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-red-800" />
+                <span>Shop Geolocation Coordinates</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Shop Latitude</label>
+                  <label className="block text-slate-700 font-bold mb-1">Shop Latitude</label>
                   <input
                     type="number"
                     step="0.000001"
                     required
                     value={settings.shop_latitude}
                     onChange={(e) => setSettings({ ...settings, shop_latitude: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full pro-input text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Shop Longitude</label>
+                  <label className="block text-slate-700 font-bold mb-1">Shop Longitude</label>
                   <input
                     type="number"
                     step="0.000001"
                     required
                     value={settings.shop_longitude}
                     onChange={(e) => setSettings({ ...settings, shop_longitude: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full pro-input text-xs"
                   />
                 </div>
               </div>
@@ -228,7 +214,7 @@ export const AdminSettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="py-3 px-8 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-105"
+                className="py-2.5 px-8 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
               >
                 {saving ? 'Saving Settings...' : 'Save Settings'}
               </button>
@@ -236,6 +222,10 @@ export const AdminSettingsPage: React.FC = () => {
           </form>
         )}
       </main>
+
+      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p className="font-medium">FreshMeat Express • Operations Settings Console</p>
+      </footer>
     </div>
   )
 }

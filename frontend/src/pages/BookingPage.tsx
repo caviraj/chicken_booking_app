@@ -23,8 +23,10 @@ import {
   ArrowLeft,
   AlertCircle,
   MapPin,
-  Ban,
-  Sparkles
+  Sparkles,
+  Check,
+  ShieldCheck,
+  Store
 } from 'lucide-react'
 
 export const BookingPage: React.FC = () => {
@@ -32,7 +34,7 @@ export const BookingPage: React.FC = () => {
   const navigate = useNavigate()
   const { customer, user } = useAuth()
 
-  // Booking step (1 to 9)
+  // Booking step (1 to 8)
   const [step, setStep] = useState<number>(1)
 
   // Data states
@@ -65,9 +67,8 @@ export const BookingPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [validationWarning, setValidationWarning] = useState<string | null>(null)
-  const [createdOrder, setCreatedOrder] = useState<any>(null)
 
-  // Available Time Slots
+  // Time Slots
   const timeSlots = [
     '5:00 AM - 6:00 AM',
     '6:00 AM - 7:00 AM',
@@ -77,20 +78,19 @@ export const BookingPage: React.FC = () => {
 
   // Cutting options
   const cuttingOptions = [
-    { id: 'sirasa', labelKey: 'booking.sirasa', icon: '🔪' },
-    { id: 'perusa', labelKey: 'booking.perusa', icon: '🥩' },
-    { id: 'legPiece', labelKey: 'booking.legPiece', icon: '🍗' },
-    { id: 'whole', labelKey: 'booking.whole', icon: '🍗' }
+    { id: 'sirasa', labelKey: 'booking.sirasa', desc: 'Small curry cut pieces', icon: '🔪' },
+    { id: 'perusa', labelKey: 'booking.perusa', desc: 'Large biryani cut pieces', icon: '🥩' },
+    { id: 'legPiece', labelKey: 'booking.legPiece', desc: 'Full leg & thigh pieces', icon: '🍗' },
+    { id: 'whole', labelKey: 'booking.whole', desc: 'Full dressed bird clean cut', icon: '🍗' }
   ]
 
   useEffect(() => {
-    // Fetch rates on mount
     fetchMeatRates().then((res) => {
       setRates(res)
     })
   }, [])
 
-  // Live calculation of item subtotal
+  // Calculation
   const currentRatePerKg = rates[selectedMeat]?.rate_per_kg || (selectedMeat === 'mutton' ? 750 : selectedMeat === 'duck' ? 380 : 240)
   const effectiveQty = customQty ? parseFloat(customQty) || quantityKg : quantityKg
   const itemTotal = roundNumber(currentRatePerKg * effectiveQty)
@@ -101,7 +101,6 @@ export const BookingPage: React.FC = () => {
     return Math.round(num * 100) / 100
   }
 
-  // Handle Date change and validate cutoff/stock
   const handleDateChange = async (dateVal: string) => {
     setDeliveryDate(dateVal)
     setErrorMsg(null)
@@ -113,10 +112,9 @@ export const BookingPage: React.FC = () => {
     }
   }
 
-  // Handle Calculate Delivery Fee
   const handleCalculateDelivery = async () => {
     if (!deliveryAddress.trim()) {
-      setErrorMsg('Please enter a delivery address.')
+      setErrorMsg('Please enter your full delivery address.')
       return
     }
     setLoading(true)
@@ -128,7 +126,6 @@ export const BookingPage: React.FC = () => {
     setLoading(false)
   }
 
-  // Handle Final Order Submission
   const handleConfirmOrder = async () => {
     setLoading(true)
     setErrorMsg(null)
@@ -149,516 +146,522 @@ export const BookingPage: React.FC = () => {
 
       const res = await submitOrder(payload)
       const newOrder = res.order || res
-      setCreatedOrder(newOrder)
       if (newOrder && newOrder.id) {
         navigate(`/order-confirmation/${newOrder.id}`)
       } else {
-        setStep(9)
+        navigate('/orders')
       }
-
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to confirm order')
+      setErrorMsg(err.message || 'Failed to submit order')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-between selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between selection:bg-red-800 selection:text-white">
       <Header />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {/* Step Progress Bar */}
-        {step < 9 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-2 font-medium">
-              <span className="text-orange-400 font-bold">{t('booking.title')}</span>
-              <span>{t('booking.step', { current: step, total: 8 })}</span>
-            </div>
-            <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
-              <div
-                className="bg-gradient-to-r from-orange-500 to-amber-400 h-full rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${(step / 8) * 100}%` }}
-              ></div>
-            </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        {/* Wizard Progress Indicator */}
+        <div className="mb-6 pro-card p-4">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2">
+            <span className="text-red-800 flex items-center gap-1.5">
+              <ShoppingBag className="w-4 h-4" />
+              <span>Fresh Meat Booking Wizard</span>
+            </span>
+            <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-600">
+              Step {step} of 7
+            </span>
           </div>
-        )}
+          
+          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-red-800 h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${(step / 7) * 100}%` }}
+            ></div>
+          </div>
+        </div>
 
         {/* Global Error Banner */}
         {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-400 text-sm animate-in fade-in">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-800 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* ================= STEP 1: MEAT TYPE ================= */}
-        {step === 1 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step1Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Choose your preferred fresh meat option.</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Chicken */}
-              <div
-                onClick={() => setSelectedMeat('chicken')}
-                className={`cursor-pointer rounded-2xl p-5 border transition-all duration-200 ${
-                  selectedMeat === 'chicken'
-                    ? 'bg-orange-500/15 border-orange-500 shadow-lg shadow-orange-500/10 scale-[1.02]'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="text-3xl mb-2">🐔</div>
-                <h3 className="font-bold text-slate-100 text-base">{t('booking.chicken')}</h3>
-                <p className="text-xs text-slate-400 mt-1">{t('booking.chickenDesc')}</p>
-                <div className="mt-4 pt-3 border-t border-slate-800/80 font-semibold text-sm text-orange-400">
-                  {t('booking.perKg', { rate: rates['chicken']?.rate_per_kg || 240 })}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Main Wizard Step Box */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* STEP 1: Meat Selection */}
+            {step === 1 && (
+              <div className="pro-card p-6 sm:p-8">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5 text-red-800" />
+                    <span>Select Meat Type</span>
+                  </h2>
+                  <span className="badge-fresh px-2.5 py-1 rounded-full text-[11px] font-bold">
+                    Daily Fresh Stock
+                  </span>
                 </div>
-              </div>
+                <p className="text-xs text-slate-500 mb-6">Select your premium farm fresh meat category.</p>
 
-              {/* Mutton */}
-              <div
-                onClick={() => setSelectedMeat('mutton')}
-                className={`cursor-pointer rounded-2xl p-5 border transition-all duration-200 ${
-                  selectedMeat === 'mutton'
-                    ? 'bg-orange-500/15 border-orange-500 shadow-lg shadow-orange-500/10 scale-[1.02]'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="text-3xl mb-2">🐐</div>
-                <h3 className="font-bold text-slate-100 text-base">{t('booking.mutton')}</h3>
-                <p className="text-xs text-slate-400 mt-1">{t('booking.muttonDesc')}</p>
-                <div className="mt-4 pt-3 border-t border-slate-800/80 font-semibold text-sm text-orange-400">
-                  {t('booking.perKg', { rate: rates['mutton']?.rate_per_kg || 750 })}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Chicken */}
+                  <div
+                    onClick={() => setSelectedMeat('chicken')}
+                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${
+                      selectedMeat === 'chicken'
+                        ? 'border-red-800 bg-red-50/50 shadow-md'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="text-4xl mb-3">🐓</div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-slate-900 text-base">{t('booking.chicken') || 'Chicken'}</h3>
+                      {selectedMeat === 'chicken' && <CheckCircle className="w-4 h-4 text-red-800" />}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">Farm fresh country chicken</p>
+                    <div className="mt-4 pt-3 border-t border-slate-100 font-extrabold text-sm text-red-800">
+                      ₹{rates['chicken']?.rate_per_kg || 240} / kg
+                    </div>
+                  </div>
+
+                  {/* Mutton */}
+                  <div
+                    onClick={() => setSelectedMeat('mutton')}
+                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${
+                      selectedMeat === 'mutton'
+                        ? 'border-red-800 bg-red-50/50 shadow-md'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="text-4xl mb-3">🐐</div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-slate-900 text-base">{t('booking.mutton') || 'Mutton'}</h3>
+                      {selectedMeat === 'mutton' && <CheckCircle className="w-4 h-4 text-red-800" />}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">Tender fresh goat meat</p>
+                    <div className="mt-4 pt-3 border-t border-slate-100 font-extrabold text-sm text-red-800">
+                      ₹{rates['mutton']?.rate_per_kg || 750} / kg
+                    </div>
+                  </div>
+
+                  {/* Duck */}
+                  <div
+                    onClick={() => setSelectedMeat('duck')}
+                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${
+                      selectedMeat === 'duck'
+                        ? 'border-red-800 bg-red-50/50 shadow-md'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="text-4xl mb-3">🦆</div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-slate-900 text-base">{t('booking.duck') || 'Duck (Vaathu)'}</h3>
+                      {selectedMeat === 'duck' && <CheckCircle className="w-4 h-4 text-red-800" />}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">Organic village duck meat</p>
+                    <div className="mt-4 pt-3 border-t border-slate-100 font-extrabold text-sm text-red-800">
+                      ₹{rates['duck']?.rate_per_kg || 380} / kg
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Duck (Vaathu) */}
-              <div
-                onClick={() => setSelectedMeat('duck')}
-                className={`cursor-pointer rounded-2xl p-5 border transition-all duration-200 ${
-                  selectedMeat === 'duck'
-                    ? 'bg-orange-500/15 border-orange-500 shadow-lg shadow-orange-500/10 scale-[1.02]'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="text-3xl mb-2">🦆</div>
-                <h3 className="font-bold text-slate-100 text-base">{t('booking.duck')}</h3>
-                <p className="text-xs text-slate-400 mt-1">{t('booking.duckDesc')}</p>
-                <div className="mt-4 pt-3 border-t border-slate-800/80 font-semibold text-sm text-orange-400">
-                  {t('booking.perKg', { rate: rates['duck']?.rate_per_kg || 380 })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 2: QUANTITY ================= */}
-        {step === 2 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step2Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Select preset weight or enter manual quantity.</p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-              {[0.25, 0.5, 1.0, 2.0].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => {
-                    setQuantityKg(preset)
-                    setCustomQty('')
-                  }}
-                  className={`py-3.5 px-4 rounded-xl border text-sm font-semibold transition-all ${
-                    !customQty && quantityKg === preset
-                      ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20'
-                      : 'bg-slate-900/60 text-slate-200 border-slate-800 hover:bg-slate-800'
-                  }`}
-                >
-                  {preset} kg
-                </button>
-              ))}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">Manual Quantity Entry (kg)</label>
-              <input
-                type="number"
-                step="0.05"
-                min="0.1"
-                placeholder={t('booking.customQtyPlaceholder')}
-                value={customQty}
-                onChange={(e) => setCustomQty(e.target.value)}
-                className="w-full glass-input rounded-xl px-4 py-3 text-sm"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 3: DELIVERY DATE ================= */}
-        {step === 3 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step3Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Choose your preferred delivery date.</p>
-
-            {validationWarning && (
-              <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{validationWarning}</span>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                onClick={() => handleDateChange(todayStr)}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  deliveryDate === todayStr
-                    ? 'bg-orange-500/15 border-orange-500 shadow-lg shadow-orange-500/10'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="text-xs text-orange-400 font-semibold mb-1">{t('booking.today')}</div>
-                <div className="text-base font-bold text-slate-100">{todayStr}</div>
-              </button>
+            {/* STEP 2: Quantity & Custom weight */}
+            {step === 2 && (
+              <div className="pro-card p-6 sm:p-8">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-red-800" />
+                  <span>Choose Quantity (kg)</span>
+                </h2>
+                <p className="text-xs text-slate-500 mb-6">Select from standard presets or input custom weight.</p>
 
-              <button
-                type="button"
-                onClick={() => handleDateChange(tomorrowStr)}
-                className={`p-4 rounded-2xl border text-left transition-all ${
-                  deliveryDate === tomorrowStr
-                    ? 'bg-orange-500/15 border-orange-500 shadow-lg shadow-orange-500/10'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <div className="text-xs text-orange-400 font-semibold mb-1">{t('booking.tomorrow')}</div>
-                <div className="text-base font-bold text-slate-100">{tomorrowStr}</div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 4: TIME SLOT ================= */}
-        {step === 4 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <Clock className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step4Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Select your preferred early morning time slot.</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {timeSlots.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => setTimeSlot(slot)}
-                  className={`p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
-                    timeSlot === slot
-                      ? 'bg-orange-500/15 border-orange-500 text-white font-semibold'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <span>{slot}</span>
-                  {timeSlot === slot && <CheckCircle className="w-4 h-4 text-orange-400" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 5: CUTTING TYPE ================= */}
-        {step === 5 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <Scissors className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step5Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Specify how you would like your meat cut.</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {cuttingOptions.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCuttingType(item.id)}
-                  className={`p-4 rounded-xl border text-left flex items-center gap-3 transition-all ${
-                    cuttingType === item.id
-                      ? 'bg-orange-500/15 border-orange-500 text-white font-semibold'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span>{t(item.labelKey)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 6: FULFILLMENT ================= */}
-        {step === 6 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <Truck className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step6Title')}</span>
-            </h2>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                onClick={() => setFulfillmentType('delivery')}
-                className={`p-4 rounded-2xl border text-center transition-all ${
-                  fulfillmentType === 'delivery'
-                    ? 'bg-orange-500/15 border-orange-500 text-white font-bold'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Truck className="w-6 h-6 mx-auto mb-2 text-orange-400" />
-                <span>{t('booking.delivery')}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setFulfillmentType('pickup')}
-                className={`p-4 rounded-2xl border text-center transition-all ${
-                  fulfillmentType === 'pickup'
-                    ? 'bg-orange-500/15 border-orange-500 text-white font-bold'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <ShoppingBag className="w-6 h-6 mx-auto mb-2 text-orange-400" />
-                <span>{t('booking.pickup')}</span>
-              </button>
-            </div>
-
-            {fulfillmentType === 'delivery' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    {t('booking.deliveryAddressLabel')}
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                    <textarea
-                      rows={3}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder={t('booking.deliveryAddressPlaceholder')}
-                      className="w-full glass-input rounded-xl pl-10 pr-3.5 py-2.5 text-sm"
-                    ></textarea>
-                  </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  {[0.5, 1.0, 2.0, 5.0].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setQuantityKg(preset)
+                        setCustomQty('')
+                      }}
+                      className={`py-3 px-4 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                        !customQty && quantityKg === preset
+                          ? 'border-red-800 bg-red-800 text-white shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      {preset} kg
+                    </button>
+                  ))}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleCalculateDelivery}
-                  disabled={loading || !deliveryAddress.trim()}
-                  className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all disabled:opacity-50"
-                >
-                  {t('booking.calculateFee')}
-                </button>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Custom Weight Entry (in kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.25"
+                    placeholder="e.g. 1.5"
+                    value={customQty}
+                    onChange={(e) => setCustomQty(e.target.value)}
+                    className="w-full pro-input text-xs"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">Minimum order: 0.25 kg</p>
+                </div>
+              </div>
+            )}
 
-                {deliveryCharge > 0 && (
-                  <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs flex items-center justify-between text-slate-300">
-                    <span>Delivery Charge ({deliveryZone}):</span>
-                    <span className="font-bold text-orange-400">₹{deliveryCharge}</span>
+            {/* STEP 3: Cutting Style */}
+            {step === 3 && (
+              <div className="pro-card p-6 sm:p-8">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <Scissors className="w-5 h-5 text-red-800" />
+                  <span>Cutting Style & Preparation</span>
+                </h2>
+                <p className="text-xs text-slate-500 mb-6">Choose how our expert butchers should cut your meat.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {cuttingOptions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setCuttingType(item.id)}
+                      className={`p-4 rounded-2xl border-2 text-left flex items-start gap-3 transition-all cursor-pointer ${
+                        cuttingType === item.id
+                          ? 'border-red-800 bg-red-50/60 shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-2xl">{item.icon}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-extrabold text-slate-900 text-sm">{t(item.labelKey) || item.id}</h4>
+                          {cuttingType === item.id && <Check className="w-4 h-4 text-red-800" />}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: Date Selection */}
+            {step === 4 && (
+              <div className="pro-card p-6 sm:p-8">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-red-800" />
+                  <span>Select Delivery Date</span>
+                </h2>
+                <p className="text-xs text-slate-500 mb-6">Choose date for freshly processed meat delivery.</p>
+
+                {validationWarning && (
+                  <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2 font-medium">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{validationWarning}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleDateChange(todayStr)}
+                    className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      deliveryDate === todayStr
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="badge-fresh px-2 py-0.5 rounded-full text-[10px] font-bold mb-2 inline-block">
+                      Same Day Delivery
+                    </span>
+                    <div className="text-base font-extrabold text-slate-900">Today</div>
+                    <div className="text-xs text-slate-500 mt-1">{todayStr}</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDateChange(tomorrowStr)}
+                    className={`p-5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      deliveryDate === tomorrowStr
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="badge-gold px-2 py-0.5 rounded-full text-[10px] font-bold mb-2 inline-block">
+                      Pre-order Early
+                    </span>
+                    <div className="text-base font-extrabold text-slate-900">Tomorrow</div>
+                    <div className="text-xs text-slate-500 mt-1">{tomorrowStr}</div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 5: Time Slot */}
+            {step === 5 && (
+              <div className="pro-card p-6 sm:p-8">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-red-800" />
+                  <span>Morning Time Slot</span>
+                </h2>
+                <p className="text-xs text-slate-500 mb-6">Select your preferred early morning delivery slot.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {timeSlots.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setTimeSlot(slot)}
+                      className={`p-4 rounded-xl border-2 text-left flex items-center justify-between transition-all cursor-pointer ${
+                        timeSlot === slot
+                          ? 'border-red-800 bg-red-50/60 font-bold text-slate-900'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-xs font-bold">{slot}</span>
+                      {timeSlot === slot && <CheckCircle className="w-4 h-4 text-red-800" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6: Fulfillment & Address */}
+            {step === 6 && (
+              <div className="pro-card p-6 sm:p-8 space-y-6">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-red-800" />
+                  <span>Fulfillment & Address</span>
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentType('delivery')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      fulfillmentType === 'delivery'
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-extrabold text-slate-900 text-sm mb-1">
+                      <Truck className="w-4 h-4 text-red-800" /> Home Delivery
+                    </div>
+                    <p className="text-[11px] text-slate-500">Delivered right to your doorstep</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentType('pickup')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      fulfillmentType === 'pickup'
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-extrabold text-slate-900 text-sm mb-1">
+                      <Store className="w-4 h-4 text-red-800" /> Shop Pickup
+                    </div>
+                    <p className="text-[11px] text-slate-500">Free pickup from our store counter</p>
+                  </button>
+                </div>
+
+                {fulfillmentType === 'delivery' && (
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-bold text-slate-700">Delivery Address</label>
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <textarea
+                        rows={3}
+                        required
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Enter full street address, landmark, and pin code"
+                        className="w-full pro-input pl-9 text-xs"
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleCalculateDelivery}
+                      disabled={loading}
+                      className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all cursor-pointer"
+                    >
+                      {loading ? 'Calculating Fee...' : 'Calculate Delivery Fee'}
+                    </button>
+
+                    {deliveryZone && (
+                      <div className="p-3 bg-slate-100 rounded-xl text-xs flex justify-between items-center text-slate-700 font-semibold">
+                        <span>Delivery Zone: {deliveryZone}</span>
+                        <span className="text-red-800 font-extrabold">₹{deliveryCharge}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* ================= STEP 7: ORDER SUMMARY ================= */}
-        {step === 7 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-4 flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step7Title')}</span>
-            </h2>
+            {/* STEP 7: Payment & Checkout */}
+            {step === 7 && (
+              <div className="pro-card p-6 sm:p-8 space-y-6">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-2 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-red-800" />
+                  <span>Payment Method</span>
+                </h2>
 
-            <div className="space-y-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-sm mb-6">
-              <div className="flex justify-between text-slate-300">
-                <span>Meat Type:</span>
-                <span className="font-semibold text-slate-100 capitalize">{selectedMeat}</span>
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Quantity:</span>
-                <span className="font-semibold text-slate-100">{effectiveQty} kg</span>
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Rate per kg:</span>
-                <span className="font-semibold text-slate-100">₹{currentRatePerKg}</span>
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Delivery Date & Slot:</span>
-                <span className="font-semibold text-slate-100">{deliveryDate} ({timeSlot})</span>
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Cutting Preference:</span>
-                <span className="font-semibold text-slate-100 capitalize">{cuttingType}</span>
-              </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('online')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      paymentMethod === 'online'
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-extrabold text-slate-900 text-sm mb-1">
+                      <CreditCard className="w-4 h-4 text-red-800" /> Razorpay Online
+                    </div>
+                    <p className="text-[11px] text-slate-500">UPI, Credit/Debit Cards, NetBanking</p>
+                  </button>
 
-              <div className="pt-3 border-t border-slate-800 flex justify-between text-slate-300">
-                <span>{t('booking.itemTotal')}:</span>
-                <span className="font-semibold text-slate-100">₹{itemTotal}</span>
-              </div>
-
-              <div className="flex justify-between text-slate-300">
-                <span>{t('booking.deliveryFee')}:</span>
-                <span className="font-semibold text-slate-100">
-                  {fulfillmentType === 'pickup' ? t('booking.freePickup') : `₹${finalDeliveryCharge}`}
-                </span>
-              </div>
-
-              <div className="pt-3 border-t border-slate-800 flex justify-between text-lg font-bold text-orange-400">
-                <span>{t('booking.grandTotal')}:</span>
-                <span>₹{grandTotal}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 8: PAYMENT METHOD ================= */}
-        {step === 8 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2 flex items-center gap-2">
-              <CreditCard className="w-6 h-6 text-orange-400" />
-              <span>{t('booking.step8Title')}</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">Choose your preferred payment method.</p>
-
-            <div className="space-y-4 mb-6">
-              {/* Online Payment (Active) */}
-              <div
-                onClick={() => setPaymentMethod('online')}
-                className={`cursor-pointer p-4 rounded-2xl border flex items-start gap-4 transition-all ${
-                  paymentMethod === 'online'
-                    ? 'bg-orange-500/15 border-orange-500'
-                    : 'bg-slate-900/60 border-slate-800'
-                }`}
-              >
-                <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <CreditCard className="w-5 h-5" />
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cod')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      paymentMethod === 'cod'
+                        ? 'border-red-800 bg-red-50/60 shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-extrabold text-slate-900 text-sm mb-1">
+                      💵 Cash on Delivery
+                    </div>
+                    <p className="text-[11px] text-slate-500">Pay cash when meat is delivered</p>
+                  </button>
                 </div>
-                <div>
-                  <h4 className="font-bold text-slate-100 text-base">{t('booking.onlinePayment')}</h4>
-                  <p className="text-xs text-slate-400 mt-1">{t('booking.onlinePaymentDesc')}</p>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Meat Item ({selectedMeat.toUpperCase()} - {effectiveQty} kg)</span>
+                    <span className="font-bold text-slate-900">₹{itemTotal}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Delivery Charge ({fulfillmentType})</span>
+                    <span className="font-bold text-slate-900">₹{finalDeliveryCharge}</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 flex justify-between text-slate-900 text-sm font-extrabold">
+                    <span>Grand Total</span>
+                    <span className="text-red-800 text-base">₹{grandTotal}</span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Cash on Delivery (Held / Disabled per directive) */}
-              <div className="opacity-50 p-4 rounded-2xl border border-slate-800 bg-slate-900/30 flex items-start gap-4 cursor-not-allowed">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-500 flex items-center justify-center shrink-0 mt-0.5">
-                  <Ban className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-400 text-base flex items-center gap-2">
-                    <span>{t('booking.cod')}</span>
-                    <span className="text-[10px] uppercase tracking-wider bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded font-semibold">
-                      Temporarily Unavailable
-                    </span>
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1">{t('booking.codHeld')}</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleConfirmOrder}
+                  disabled={loading}
+                  className="w-full py-3.5 px-4 rounded-xl btn-primary text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span>{loading ? 'Processing Order...' : `Confirm & Place Order (₹${grandTotal})`}</span>
+                </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= STEP 9: ORDER CONFIRMATION SUCCESS ================= */}
-        {step === 9 && (
-          <div className="glass-card rounded-3xl p-6 sm:p-8 text-center animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
-              <CheckCircle className="w-10 h-10" />
-            </div>
-
-            <h2 className="text-2xl font-extrabold text-slate-100 mb-2">
-              {t('booking.step9Title')}
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">
-              {t('booking.deliveryScheduledFor', { date: deliveryDate, slot: timeSlot })}
-            </p>
-
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 max-w-md mx-auto text-left space-y-2 text-xs text-slate-300 mb-6">
-              <div className="flex justify-between">
-                <span>{t('booking.orderId')}:</span>
-                <span className="font-mono font-bold text-orange-400">{createdOrder?.id || 'ORD-9876'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Meat & Quantity:</span>
-                <span className="font-semibold text-slate-200 capitalize">{selectedMeat} ({effectiveQty} kg)</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Amount:</span>
-                <span className="font-bold text-slate-100 text-sm">₹{grandTotal}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Payment Status:</span>
-                <span className="font-semibold text-amber-400 uppercase">Pending Online Payment</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard')}
-              className="py-3.5 px-6 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all"
-            >
-              {t('booking.goDashboard')}
-            </button>
-          </div>
-        )}
-
-        {/* Bottom Navigation Controls (Steps 1 to 8) */}
-        {step < 9 && (
-          <div className="mt-8 flex items-center justify-between">
-            {step > 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="py-3 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-sm border border-slate-800 flex items-center gap-2 transition-all"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>{t('booking.back')}</span>
-              </button>
-            ) : (
-              <div></div>
             )}
 
-            {step < 8 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                className="py-3 px-6 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 flex items-center gap-2 transition-all"
-              >
-                <span>{t('booking.next')}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleConfirmOrder}
-                disabled={loading}
-                className="py-3 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
-              >
-                {loading ? t('auth.loading') : t('booking.confirmOrder')}
-              </button>
-            )}
+            {/* Stepper Buttons Controls */}
+            <div className="flex items-center justify-between pt-2">
+              {step > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+              ) : <div></div>}
+
+              {step < 7 && (
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  className="px-6 py-2.5 rounded-xl btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <span>Next Step</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
           </div>
-        )}
+
+          {/* Sidebar Live Order Summary */}
+          <div className="space-y-6">
+            <div className="pro-card p-6 sticky top-24 space-y-4">
+              <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+                <span>Order Summary</span>
+                <span className="badge-fresh px-2 py-0.5 rounded-full text-[10px] font-bold">Live Estimate</span>
+              </h3>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Selected Meat:</span>
+                  <span className="font-bold text-slate-900 capitalize">{selectedMeat}</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Quantity:</span>
+                  <span className="font-bold text-slate-900">{effectiveQty} kg</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Cutting Style:</span>
+                  <span className="font-bold text-slate-900 capitalize">{cuttingType}</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Delivery Date:</span>
+                  <span className="font-bold text-slate-900">{deliveryDate}</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Time Slot:</span>
+                  <span className="font-bold text-slate-900">{timeSlot}</span>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex justify-between text-slate-600">
+                  <span>Subtotal:</span>
+                  <span className="font-bold text-slate-900">₹{itemTotal}</span>
+                </div>
+
+                <div className="flex justify-between text-slate-600">
+                  <span>Delivery Fee:</span>
+                  <span className="font-bold text-slate-900">₹{finalDeliveryCharge}</span>
+                </div>
+
+                <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-slate-900">
+                  <span className="font-extrabold text-sm">Estimated Total</span>
+                  <span className="text-xl font-extrabold text-red-800">₹{grandTotal}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </main>
 
-      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
-        <p>Fresh Meat Booking System — Phase 4 Booking Page</p>
+      <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white mt-12">
+        <p className="font-medium">FreshMeat Express • Guaranteed Fresh & Hygienically Cut Daily</p>
       </footer>
     </div>
   )
