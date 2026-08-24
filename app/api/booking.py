@@ -21,6 +21,8 @@ class CalculateDeliveryRequest(BaseModel):
     customer_address: str = Field(...)
     shop_lat: Optional[float] = None
     shop_lng: Optional[float] = None
+    customer_lat: Optional[float] = None
+    customer_lng: Optional[float] = None
 
 class CreateOrderRequest(BaseModel):
     customer_id: str
@@ -99,7 +101,9 @@ def get_delivery_fee(req: CalculateDeliveryRequest) -> Dict[str, Any]:
             supabase=supabase,
             customer_address=req.customer_address,
             shop_lat=req.shop_lat,
-            shop_lng=req.shop_lng
+            shop_lng=req.shop_lng,
+            customer_lat=req.customer_lat,
+            customer_lng=req.customer_lng
         )
         return result
     except Exception as e:

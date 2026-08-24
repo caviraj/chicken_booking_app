@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { Header } from '../components/Header'
@@ -121,16 +121,15 @@ export const LoginPage: React.FC = () => {
           <div className="hidden md:flex flex-col space-y-6 p-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold w-max border border-red-200">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Premium Meat Experience</span>
+              <span>{t('auth.heroBadge') || 'Premium Meat Experience'}</span>
             </div>
             
-            <h1 className="text-4xl font-extrabold text-slate-900 leading-tight">
-              Freshly Cut Quality Meat <br />
-              <span className="text-red-800">Delivered To Your Doorstep</span>
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight">
+              {t('auth.heroTitle') || 'Freshly Cut Quality Meat Delivered To Your Doorstep'}
             </h1>
             
             <p className="text-sm text-slate-600 leading-relaxed">
-              Order farm-fresh Chicken, Mutton, and Duck cut to your exact preference with automated doorstep delivery matrix.
+              {t('auth.heroSubtitle') || 'Order farm-fresh Chicken, Mutton, and Duck cut to your exact preference with automated doorstep delivery.'}
             </p>
 
             <div className="space-y-3 pt-2">
@@ -138,20 +137,39 @@ export const LoginPage: React.FC = () => {
                 <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                   <Check className="w-4 h-4" />
                 </div>
-                <span>Hygienically Processed Daily</span>
+                <span>{t('auth.heroPoint1') || 'Hygienically Processed Daily'}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-700 font-semibold">
                 <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                   <Check className="w-4 h-4" />
                 </div>
-                <span>Select Your Custom Cutting Style</span>
+                <span>{t('auth.heroPoint2') || 'Select Your Custom Cutting Style'}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-700 font-semibold">
                 <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                   <Check className="w-4 h-4" />
                 </div>
-                <span>Instant Payment Links & COD Support</span>
+                <span>{t('auth.heroPoint3') || 'Instant Payment Links & COD Support'}</span>
               </div>
+            </div>
+
+            {/* Dedicated Admin Portal Link Card in Hero Side */}
+            <div className="mt-4 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-amber-900">{t('auth.adminAccess') || 'Admin Portal Access'}</h4>
+                  <p className="text-[11px] text-amber-700 font-medium">{t('auth.adminAccessSubtitle') || 'Manage rates & orders'}</p>
+                </div>
+              </div>
+              <Link
+                to="/admin/rates"
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs shrink-0"
+              >
+                {t('auth.openAdminPortal') || 'Admin Portal'}
+              </Link>
             </div>
           </div>
 
@@ -329,6 +347,17 @@ export const LoginPage: React.FC = () => {
                 </form>
               </div>
             )}
+
+            {/* Mobile Admin Portal Link */}
+            <div className="md:hidden mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-600">{t('auth.adminAccess') || 'Admin Portal'}</span>
+              <Link
+                to="/admin/rates"
+                className="px-3 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-all text-xs"
+              >
+                {t('auth.openAdminPortal') || 'Admin Portal'}
+              </Link>
+            </div>
           </div>
         </div>
       </main>
@@ -336,9 +365,10 @@ export const LoginPage: React.FC = () => {
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
         <p className="flex items-center justify-center gap-1.5 font-medium">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Enterprise End-to-End Encrypted Auth powered by Supabase & Razorpay</span>
+          <span>{t('auth.authFooter') || 'Enterprise End-to-End Encrypted Auth powered by Supabase & Razorpay'}</span>
         </p>
       </footer>
     </div>
   )
 }
+

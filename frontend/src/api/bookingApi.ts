@@ -21,6 +21,7 @@ export interface DeliveryCalculationResponse {
   distance_km: number | null
   delivery_zone: string
   source: string
+  is_deliverable?: boolean
 }
 
 export interface CreateOrderPayload {
@@ -81,13 +82,19 @@ export const validateDraftBooking = async (
 }
 
 export const calculateDeliveryFee = async (
-  customerAddress: string
+  customerAddress: string,
+  customerLat?: number,
+  customerLng?: number
 ): Promise<DeliveryCalculationResponse> => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/booking/calculate-delivery`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_address: customerAddress })
+      body: JSON.stringify({
+        customer_address: customerAddress,
+        customer_lat: customerLat,
+        customer_lng: customerLng
+      })
     })
     if (!res.ok) {
       throw new Error('Delivery calculation failed')
@@ -143,5 +150,16 @@ export const cancelCustomerOrder = async (orderId: string, customerId: string): 
   }
 
   return await res.json()
+}
+
+export const fetchAdminSettings = async (): Promise<any> => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/admin/settings`)
+    if (!res.ok) return { cod_enabled: false }
+    const data = await res.json()
+    return data.settings || { cod_enabled: false }
+  } catch (err) {
+    return { cod_enabled: false }
+  }
 }
 

@@ -181,45 +181,60 @@ def calculate_delivery_charge(
     supabase: Client,
     customer_address: str,
     shop_lat: Optional[float] = None,
-    shop_lng: Optional[float] = None
+    shop_lng: Optional[float] = None,
+    customer_lat: Optional[float] = None,
+    customer_lng: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Calculates delivery fee using a 4-tier fallback chain:
-    1. Primary: Google Routes API (real road distance)
-    2. Secondary: OpenRouteService Matrix API (free-tier road distance)
-    3. Tertiary: Nominatim Geocoding + Haversine * 1.35 road correction factor
-    4. Final Fallback: Database delivery_zones band
+    Calculates delivery fee using exact GPS coordinates if provided, or fallback geocoding chain:
+    1. Direct GPS coordinates (if customer_lat & customer_lng provided)
+    2. Primary: Google Routes API (real road distance)
+    3. Secondary: OpenRouteService Matrix API (free-tier road distance)
+    4. Tertiary: Nominatim Geocoding + Haversine * 1.35 road correction factor
+    5. Final Fallback: Database delivery_zones band
     
     Caches computed distance in address_distance_cache DB table with 30-day TTL.
     """
     norm_address = normalize_address(customer_address)
-
-    # 0. Persistent DB Cache Lookup (30-day TTL)
-    cached_dist = get_cached_distance(supabase, norm_address)
-    if cached_dist is not None:
-        zone_info = _find_delivery_zone_for_distance(supabase, cached_dist)
-        return {
-            "delivery_charge": zone_info["delivery_charge"],
-            "delivery_zone": zone_info["zone_name"],
-            "distance_km": cached_dist,
-            "is_cached": True,
-            "provider": "persistent_db_cache"
-        }
 
     # Fetch shop coordinates if not provided
     if shop_lat is None or shop_lng is None:
         try:
             settings_res = supabase.table("admin_settings").select("shop_latitude, shop_longitude").limit(1).execute()
             if settings_res.data and len(settings_res.data) > 0:
-                shop_lat = float(settings_res.data[0].get("shop_latitude") or 13.0827)
-                shop_lng = float(settings_res.data[0].get("shop_longitude") or 80.2707)
+                shop_lat = float(settings_res.data[0].get("shop_latitude") or 11.0342)
+                shop_lng = float(settings_res.data[0].get("shop_longitude") or 77.5853)
             else:
-                shop_lat, shop_lng = 13.0827, 80.2707
+                shop_lat, shop_lng = 11.0342, 77.5853
         except Exception:
-            shop_lat, shop_lng = 13.0827, 80.2707
+            shop_lat, shop_lng = 11.0342, 77.5853
 
     computed_dist: Optional[float] = None
     provider_used = ""
+
+    # Direct GPS distance if exact coordinates are passed
+    if customer_lat is not None and customer_lng is not None:
+        ors_dist = _try_openrouteservice_api(shop_lat, shop_lng, customer_lat, customer_lng)
+        if ors_dist is not None:
+            computed_dist = ors_dist
+            provider_used = "openrouteservice_gps"
+        else:
+            straight_km = haversine_distance_km(shop_lat, shop_lng, customer_lat, customer_lng)
+            computed_dist = round(straight_km * 1.35, 2)
+            provider_used = "haversine_gps_exact"
+
+    # 0. Persistent DB Cache Lookup (30-day TTL)
+    if computed_dist is None:
+        cached_dist = get_cached_distance(supabase, norm_address)
+        if cached_dist is not None:
+            zone_info = _find_delivery_zone_for_distance(supabase, cached_dist)
+            return {
+                "delivery_charge": zone_info["delivery_charge"],
+                "delivery_zone": zone_info["zone_name"],
+                "distance_km": cached_dist,
+                "is_cached": True,
+                "provider": "persistent_db_cache"
+            }
 
     # Tier 1: Google Routes API
     computed_dist = _try_google_routes_api(shop_lat, shop_lng, customer_address)
@@ -259,39 +274,54 @@ def calculate_delivery_charge(
 
     # Match computed distance against delivery_zones table
     zone_info = _find_delivery_zone_for_distance(supabase, computed_dist)
+    is_deliverable = computed_dist <= 5.0
+
     return {
-        "delivery_charge": zone_info["delivery_charge"],
+        "delivery_charge": zone_info["delivery_charge"] if is_deliverable else 0.0,
         "delivery_zone": zone_info["zone_name"],
         "distance_km": computed_dist,
+        "is_deliverable": is_deliverable,
+        "error_message": None if is_deliverable else "Delivery available only within 5 km from shop. Please choose Store Pickup.",
         "is_fallback": False,
         "provider": provider_used
     }
 
 
 def _find_delivery_zone_for_distance(supabase: Client, distance_km: float) -> Dict[str, Any]:
-    """Finds the matching delivery zone band for a computed distance."""
-    try:
-        res = (
-            supabase.table("delivery_zones")
-            .select("*")
-            .filter("is_active", "eq", True)
-            .filter("max_distance_km", "gte", distance_km)
-            .order("max_distance_km", desc=False)
-            .limit(1)
-            .execute()
-        )
-        if res.data and len(res.data) > 0:
-            return res.data[0]
-    except Exception:
-        pass
-
-    # Fallback default band if distance exceeds configured zones
-    charge = round(max(30.0, distance_km * 15.0), 2)
-    return {
-        "zone_name": f"Zone ({round(distance_km, 1)} km)",
-        "delivery_charge": charge,
-        "max_distance_km": distance_km
-    }
+    """Finds the matching delivery zone band for a computed distance from Kolanthapalayam shop (Strict 5 km limit)."""
+    # Strict Distance Band Rules relative to Kolanthapalayam shop:
+    # 0-2 km  -> ₹30
+    # 2-4 km  -> ₹60
+    # 4-5 km  -> ₹80
+    # >5 km   -> Out of Zone
+    if distance_km <= 2.0:
+        return {
+            "zone_name": "Zone 1 (0-2 km)",
+            "delivery_charge": 30.0,
+            "max_distance_km": 2.0,
+            "is_deliverable": True
+        }
+    elif distance_km <= 4.0:
+        return {
+            "zone_name": "Zone 2 (2-4 km)",
+            "delivery_charge": 60.0,
+            "max_distance_km": 4.0,
+            "is_deliverable": True
+        }
+    elif distance_km <= 5.0:
+        return {
+            "zone_name": "Zone 3 (4-5 km)",
+            "delivery_charge": 80.0,
+            "max_distance_km": 5.0,
+            "is_deliverable": True
+        }
+    else:
+        return {
+            "zone_name": f"Out of Delivery Range ({round(distance_km, 1)} km)",
+            "delivery_charge": 0.0,
+            "max_distance_km": distance_km,
+            "is_deliverable": False
+        }
 
 
 def _find_delivery_zone_fallback(supabase: Client) -> Dict[str, Any]:

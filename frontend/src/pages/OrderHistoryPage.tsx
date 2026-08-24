@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 export const OrderHistoryPage: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { customer, user } = useAuth()
 
@@ -39,7 +39,7 @@ export const OrderHistoryPage: React.FC = () => {
       const data = await fetchCustomerOrders(customerId)
       setOrders(data)
     } catch (err: any) {
-      setMsg({ type: 'error', text: 'Failed to load order history.' })
+      setMsg({ type: 'error', text: t('orders.fetching') || 'Failed to load order history.' })
     } finally {
       setLoading(false)
     }
@@ -123,7 +123,7 @@ export const OrderHistoryPage: React.FC = () => {
               className="py-2 px-4 rounded-xl btn-primary text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>New Booking</span>
+              <span>{t('orders.newBooking') || 'New Booking'}</span>
             </button>
             <button
               onClick={loadOrders}
@@ -181,18 +181,18 @@ export const OrderHistoryPage: React.FC = () => {
         {loading ? (
           <div className="pro-card p-8 text-center">
             <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-500 font-bold">Fetching your order history...</span>
+            <span className="text-xs text-slate-500 font-bold">{t('orders.fetching') || 'Fetching your order history...'}</span>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="pro-card p-12 text-center">
             <ShoppingBag className="w-12 h-12 text-slate-400 mx-auto mb-3" />
             <h3 className="text-base font-extrabold text-slate-800 mb-1">{t('orders.noOrders') || 'No orders found'}</h3>
-            <p className="text-xs text-slate-500 mb-6">Select your fresh meat items and place an order.</p>
+            <p className="text-xs text-slate-500 mb-6">{t('orders.noOrdersDesc') || 'Select your fresh meat items and place an order.'}</p>
             <button
               onClick={() => navigate('/booking')}
               className="py-2.5 px-5 rounded-xl btn-primary text-xs font-bold shadow-xs cursor-pointer"
             >
-              Start Booking
+              {t('orders.newBooking') || 'Start Booking'}
             </button>
           </div>
         ) : (
@@ -219,8 +219,8 @@ export const OrderHistoryPage: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="font-extrabold text-slate-900 text-base capitalize flex items-center gap-2">
-                          <span>{order.meat_type}</span>
-                          <span className="text-xs font-semibold text-slate-500">({order.quantity_kg} kg)</span>
+                          <span>{t(`booking.${order.meat_type}`) || order.meat_type}</span>
+                          <span className="text-xs font-semibold text-slate-500">({order.quantity_kg} {i18n.language === 'ta' ? 'கிலோ' : 'kg'})</span>
                         </h3>
                         <span className="text-[11px] font-mono text-slate-400">ID: {order.id}</span>
                       </div>
@@ -236,7 +236,7 @@ export const OrderHistoryPage: React.FC = () => {
                             : 'badge-gold'
                         }`}
                       >
-                        {order.order_status}
+                        {isCancelled ? (t('orders.statusCancelled') || 'Cancelled') : order.order_status === 'delivered' ? (t('orders.statusDelivered') || 'Delivered') : (t('orders.statusActive') || order.order_status)}
                       </span>
 
                       <span
@@ -248,7 +248,7 @@ export const OrderHistoryPage: React.FC = () => {
                             : 'badge-gold'
                         }`}
                       >
-                        {isPaid ? 'Paid' : isCodPending ? 'COD Pending' : 'Pending Online'}
+                        {isPaid ? (t('orders.paid') || 'Paid') : isCodPending ? (t('orders.codPending') || 'COD Pending') : (t('orders.pendingOnline') || 'Pending Online')}
                       </span>
                     </div>
                   </div>
@@ -256,17 +256,17 @@ export const OrderHistoryPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-4 text-xs text-slate-600 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-red-800 shrink-0" />
-                      <span>Date: <strong className="text-slate-900">{order.delivery_date}</strong></span>
+                      <span>{t('orders.dateLabel') || 'Date'}: <strong className="text-slate-900">{order.delivery_date}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-red-800 shrink-0" />
-                      <span>Slot: <strong className="text-slate-900">{order.delivery_time_slot}</strong></span>
+                      <span>{t('orders.slotLabel') || 'Slot'}: <strong className="text-slate-900">{order.delivery_time_slot}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-red-800 shrink-0" />
-                      <span>Cutting: <strong className="text-slate-900 capitalize">{order.cutting_type}</strong></span>
+                      <span>{t('orders.cuttingLabel') || 'Cutting'}: <strong className="text-slate-900 capitalize">{t(`booking.${order.cutting_type}`) || order.cutting_type}</strong></span>
                     </div>
                   </div>
 
@@ -279,7 +279,7 @@ export const OrderHistoryPage: React.FC = () => {
 
                   <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                     <div className="text-sm font-extrabold text-slate-900">
-                      Total: <span className="text-red-800">₹{order.grand_total}</span>
+                      {t('orders.totalLabel') || 'Total'}: <span className="text-red-800">₹{order.grand_total}</span>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -290,7 +290,7 @@ export const OrderHistoryPage: React.FC = () => {
                           rel="noopener noreferrer"
                           className="py-2 px-3.5 rounded-xl bg-red-800 hover:bg-red-600 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                         >
-                          <span>Pay ₹{order.grand_total}</span>
+                          <span>{t('orders.payNow', { amount: order.grand_total }) || `Pay ₹${order.grand_total}`}</span>
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
@@ -303,7 +303,7 @@ export const OrderHistoryPage: React.FC = () => {
                           className="py-2 px-3.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-800 font-bold text-xs border border-red-200 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         >
                           <XCircle className="w-3.5 h-3.5" />
-                          <span>{cancellingId === order.id ? 'Cancelling...' : 'Cancel Order'}</span>
+                          <span>{cancellingId === order.id ? (t('orders.cancelling') || 'Cancelling...') : (t('orders.cancelOrder') || 'Cancel Order')}</span>
                         </button>
                       )}
                     </div>
@@ -316,8 +316,9 @@ export const OrderHistoryPage: React.FC = () => {
       </main>
 
       <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
-        <p className="font-medium">FreshMeat Express Customer Order Portal</p>
+        <p className="font-medium">{t('footer.portalName') || 'FreshMeat Express Customer Order Portal'}</p>
       </footer>
     </div>
   )
 }
+

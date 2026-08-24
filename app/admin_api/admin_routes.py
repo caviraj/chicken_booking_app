@@ -24,6 +24,7 @@ class UpdateSettingsRequest(BaseModel):
     shop_latitude: float
     shop_longitude: float
     is_cleaning_day: bool = False
+    cod_enabled: bool = False
 
 class UpdateOrderStatusRequest(BaseModel):
     admin_email: str
@@ -126,9 +127,10 @@ def get_admin_settings() -> Dict[str, Any]:
         default_settings = {
             "order_cutoff_time": "20:00",
             "daily_stock_limit_kg": 100.0,
-            "shop_latitude": 13.0827,
-            "shop_longitude": 80.2707,
-            "is_cleaning_day": False
+            "shop_latitude": 11.0342,
+            "shop_longitude": 77.5853,
+            "is_cleaning_day": False,
+            "cod_enabled": False
         }
         return {"settings": default_settings}
     except Exception as e:
@@ -149,6 +151,7 @@ def update_admin_settings(req: UpdateSettingsRequest) -> Dict[str, Any]:
             "shop_latitude": req.shop_latitude,
             "shop_longitude": req.shop_longitude,
             "is_cleaning_day": req.is_cleaning_day,
+            "cod_enabled": req.cod_enabled,
             "updated_at": datetime.now().isoformat()
         }
 
