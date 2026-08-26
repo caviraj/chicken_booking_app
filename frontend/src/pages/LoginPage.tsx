@@ -81,7 +81,14 @@ export const LoginPage: React.FC = () => {
           redirectTo: redirectTarget
         })
         if (error) {
-          setErrorMsg(error.message)
+          if (error.message.toLowerCase().includes('rate limit')) {
+            setErrorMsg(
+              t('auth.emailRateLimit') ||
+                'அதிகமுறை மின்னஞ்சல் அனுப்பப்பட்டதால் பாதுகாப்புத் தடை செய்யப்பட்டுள்ளது. தயவுசெய்து 15-30 நிமிடங்கள் காத்திருந்து மீண்டும் முயற்சிக்கவும், அல்லது ஏற்கெனவே வந்த மின்னஞ்சலைப் பார்க்கவும்!'
+            )
+          } else {
+            setErrorMsg(error.message)
+          }
         } else {
           setSuccessMsg(
             t('auth.resetEmailSent') ||
