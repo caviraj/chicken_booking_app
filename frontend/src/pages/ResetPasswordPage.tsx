@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Header } from '../components/Header'
@@ -15,10 +15,44 @@ export const ResetPasswordPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
+  useEffect(() => {
+    // Check if URL has PKCE code or recovery hash
+    const handleAuthTokenExchange = async () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      if (code) {
+        setLoading(true)
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        setLoading(false)
+        if (error) {
+          setErrorMsg(error.message || 'Password reset link is invalid or has expired.')
+        }
+      }
+    }
+
+    handleAuthTokenExchange()
+
+    // Listen for auth state events like PASSWORD_RECOVERY
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setSuccessMsg('Recovery session verified. Please enter your new password below.')
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
     setSuccessMsg(null)
+
+    if (password.length < 6) {
+      setErrorMsg(t('auth.passwordTooShort') || 'Password must be at least 6 characters long.')
+      return
+    }
 
     if (password !== confirmPassword) {
       setErrorMsg(t('auth.passwordMismatch') || 'Passwords do not match')
@@ -34,7 +68,7 @@ export const ResetPasswordPage: React.FC = () => {
       if (error) {
         setErrorMsg(error.message)
       } else {
-        setSuccessMsg(t('auth.passwordUpdated') || 'Password updated successfully!')
+        setSuccessMsg(t('auth.passwordUpdated') || 'Password updated successfully! Redirecting to login...')
         setTimeout(() => {
           navigate('/login')
         }, 2000)
@@ -52,14 +86,14 @@ export const ResetPasswordPage: React.FC = () => {
 
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="pro-card p-6 sm:p-8 max-w-md w-full text-center animate-in zoom-in-95 duration-300">
-          <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-800 flex items-center justify-center mx-auto mb-4 border border-red-200">
+          <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-800 flex items-center justify-center mx-auto mb-4 border border-red-200 shadow-inner">
             <KeyRound className="w-7 h-7" />
           </div>
 
           <h2 className="text-2xl font-extrabold text-slate-900 mb-1">
             {t('auth.updatePassword') || 'Update New Password'}
           </h2>
-          <p className="text-xs text-slate-500 mb-6">
+          <p className="text-xs text-slate-500 mb-6 font-medium">
             Enter your new secure password below to complete account recovery.
           </p>
 
@@ -83,7 +117,7 @@ export const ResetPasswordPage: React.FC = () => {
                 {t('auth.newPasswordLabel') || 'New Password'}
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                 <input
                   type="password"
                   required
@@ -91,7 +125,7 @@ export const ResetPasswordPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pro-input pl-9 text-xs"
+                  className="w-full pro-input pro-input-has-icon text-xs"
                 />
               </div>
             </div>
@@ -101,7 +135,7 @@ export const ResetPasswordPage: React.FC = () => {
                 {t('auth.confirmNewPasswordLabel') || 'Confirm New Password'}
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                 <input
                   type="password"
                   required
@@ -109,7 +143,7 @@ export const ResetPasswordPage: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pro-input pl-9 text-xs"
+                  className="w-full pro-input pro-input-has-icon text-xs"
                 />
               </div>
             </div>
