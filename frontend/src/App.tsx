@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminProtectedRoute } from './components/AdminProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { AboutUsPage } from './pages/AboutUsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { BookingPage } from './pages/BookingPage'
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage'
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
           {/* Customer Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
           <Route
             path="/dashboard"
             element={
