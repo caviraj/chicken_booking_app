@@ -32,9 +32,13 @@ export const LoginPage: React.FC = () => {
 
   // Redirect if user is already logged in
   React.useEffect(() => {
-    // If user clicked password recovery email link, redirect to reset-password page
-    if (window.location.hash.includes('type=recovery') || window.location.search.includes('code=')) {
-      navigate('/reset-password' + window.location.search + window.location.hash)
+    const isPasswordRecovery = sessionStorage.getItem('is_password_recovery') === 'true'
+    if (
+      isPasswordRecovery ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('code=')
+    ) {
+      navigate('/reset-password')
       return
     }
     if (user) {

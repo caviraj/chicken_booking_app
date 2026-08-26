@@ -79,6 +79,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   useEffect(() => {
+    // Synchronously check if URL contains password recovery tokens BEFORE Supabase SDK cleans the hash
+    if (
+      window.location.hash.includes('type=recovery') ||
+      window.location.hash.includes('access_token') ||
+      window.location.search.includes('code=')
+    ) {
+      sessionStorage.setItem('is_password_recovery', 'true')
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -90,9 +99,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })
 
     // Listen to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
+
+      if (event === 'PASSWORD_RECOVERY') {
+        sessionStorage.setItem('is_password_recovery', 'true')
+        if (window.location.pathname !== '/reset-password') {
+          window.location.href = '/reset-password'
+          return
+        }
+      }
+
       if (session?.user) {
         await syncCustomerProfile(session.user)
       } else {

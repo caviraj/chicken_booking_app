@@ -68,6 +68,7 @@ export const ResetPasswordPage: React.FC = () => {
       if (error) {
         setErrorMsg(error.message)
       } else {
+        sessionStorage.removeItem('is_password_recovery')
         setSuccessMsg(t('auth.passwordUpdated') || 'Password updated successfully! Redirecting to login...')
         setTimeout(() => {
           navigate('/login')
