@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
-import { Languages, LogOut, ShoppingBag, User, Sparkles, Settings, LayoutDashboard, Info } from 'lucide-react'
+import { Languages, LogOut, ShoppingBag, User, Sparkles, Settings, LayoutDashboard } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 export const Header: React.FC = () => {
@@ -56,47 +56,33 @@ export const Header: React.FC = () => {
       {/* Right controls & Navigation */}
       <div className="flex items-center gap-2.5 sm:gap-4">
         {/* Customer Nav items */}
-        <nav className="flex items-center gap-1 sm:gap-2">
-          {user && (
-            <>
-              <Link
-                to="/booking"
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  isActive('/booking')
-                    ? 'bg-red-800 text-white shadow-xs'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-red-800'
-                }`}
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>{t('header.bookNow') || 'Book Meat'}</span>
-              </Link>
+        {user && (
+          <nav className="flex items-center gap-1 sm:gap-2">
+            <Link
+              to="/booking"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                isActive('/booking')
+                  ? 'bg-red-800 text-white shadow-xs'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-red-800'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>{t('header.bookNow') || 'Book Meat'}</span>
+            </Link>
 
-              <Link
-                to="/orders"
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  isActive('/orders')
-                    ? 'bg-red-800 text-white shadow-xs'
-                    : 'text-slate-700 hover:bg-slate-100 hover:text-red-800'
-                }`}
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>{t('header.myOrders') || 'My Orders'}</span>
-              </Link>
-            </>
-          )}
-
-          <Link
-            to="/about"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              isActive('/about')
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-700 hover:bg-slate-100 hover:text-red-800'
-            }`}
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span>{currentLang === 'ta' ? 'எங்களை பற்றி' : 'About Us'}</span>
-          </Link>
-        </nav>
+            <Link
+              to="/orders"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                isActive('/orders')
+                  ? 'bg-red-800 text-white shadow-xs'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-red-800'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>{t('header.myOrders') || 'My Orders'}</span>
+            </Link>
+          </nav>
+        )}
 
         {/* Language Switcher */}
         <button
