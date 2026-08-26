@@ -270,29 +270,29 @@ export const LoginPage: React.FC = () => {
             {isExpanded && (
               <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-300">
                 {/* Tabs */}
-                {tab !== 'forgot' ? (
-                  <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
-                    <button
-                      type="button"
-                      onClick={() => { setTab('signin'); setErrorMsg(null); setSuccessMsg(null); }}
-                      className={`py-1.5 rounded-lg transition-all cursor-pointer ${tab === 'signin' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
-                    >
-                      {t('auth.signInTab') || 'Sign In'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setTab('signup'); setErrorMsg(null); setSuccessMsg(null); }}
-                      className={`py-1.5 rounded-lg transition-all cursor-pointer ${tab === 'signup' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
-                    >
-                      {t('auth.signUpTab') || 'Register'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
-                    <h3 className="text-xs font-extrabold text-amber-900">{t('auth.resetPasswordTitle') || 'Reset Password'}</h3>
-                    <p className="text-[11px] text-amber-700 font-medium mt-0.5">{t('auth.resetPasswordSubtitle') || 'Enter your registered email to receive reset link'}</p>
-                  </div>
-                )}
+                <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
+                  <button
+                    type="button"
+                    onClick={() => { setTab('signin'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signin' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
+                  >
+                    {t('auth.signInTab') || 'Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTab('signup'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signup' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
+                  >
+                    {t('auth.signUpTab') || 'Register'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'forgot' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
+                  >
+                    {t('auth.forgotPassword') || 'Forgot?'}
+                  </button>
+                </div>
 
                 <form onSubmit={handleEmailAuth} className="space-y-3">
                   {tab === 'signup' && (
