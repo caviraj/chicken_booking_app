@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Navigation, Loader2, MapPin, Search } from 'lucide-react'
-import { TIRUPPUR_ERODE_LOCAL_PLACES } from '../data/localPlaces'
+import { Navigation, Loader2, MapPin } from 'lucide-react'
 
 declare const L: any
 
@@ -8,15 +7,6 @@ interface LeafletMapPickerProps {
   onLocationSelect: (address: string, lat: number, lng: number) => void
   initialLat?: number
   initialLng?: number
-}
-
-interface SearchSuggestion {
-  name: string
-  lat: number
-  lng: number
-  city?: string
-  state?: string
-  isLocal?: boolean
 }
 
 export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
@@ -28,11 +18,6 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
   const mapInstanceRef = useRef<any>(null)
   const markerRef = useRef<any>(null)
   const accuracyCircleRef = useRef<any>(null)
-
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
-  const [searching, setSearching] = useState<boolean>(false)
-  const [showDropdown, setShowDropdown] = useState<boolean>(false)
 
   const [locating, setLocating] = useState<boolean>(false)
   const [gpsError, setGpsError] = useState<string | null>(null)
@@ -51,89 +36,15 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       if (res.ok) {
         const data = await res.json()
         if (data && data.display_name) {
-          setSearchQuery(data.display_name)
           onLocationSelect(data.display_name, lat, lng)
           return
         }
       }
       const fallback = `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
-      setSearchQuery(fallback)
       onLocationSelect(fallback, lat, lng)
     } catch (err) {
       const fallback = `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
-      setSearchQuery(fallback)
       onLocationSelect(fallback, lat, lng)
-    }
-  }
-
-  // Handle Search Input Change (Photon OSM Free Autocomplete API + Local Tiruppur/Erode Places Index)
-  const handleSearchChange = async (query: string) => {
-    setSearchQuery(query)
-    const q = query.trim().toLowerCase()
-    if (q.length < 2) {
-      setSuggestions([])
-      setShowDropdown(false)
-      return
-    }
-
-    setSearching(true)
-
-    // 1. Search Local Index first (Kulathupalayam, Vallipuram, Muthur, Kangeyam, etc.)
-    const localMatches: SearchSuggestion[] = TIRUPPUR_ERODE_LOCAL_PLACES.filter(
-      (p) => p.name.toLowerCase().includes(q) || (p.district && p.district.toLowerCase().includes(q))
-    ).map((p) => ({
-      name: p.name,
-      lat: p.lat,
-      lng: p.lng,
-      city: p.district,
-      isLocal: true
-    }))
-
-    try {
-      // 2. Fetch Photon OSM API with Location Bias towards Kulathupalayam (lat: 11.0342, lon: 77.5853)
-      const res = await fetch(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lat=11.0342&lon=77.5853&limit=5`
-      )
-      let apiMatches: SearchSuggestion[] = []
-      if (res.ok) {
-        const data = await res.json()
-        if (data && data.features) {
-          apiMatches = data.features.map((f: any) => {
-            const props = f.properties || {}
-            const coords = f.geometry?.coordinates || [0, 0]
-            const nameParts = [props.name, props.street, props.district || props.city || props.county, props.state]
-              .filter(Boolean)
-              .join(', ')
-            return {
-              name: nameParts || props.name || 'Location',
-              lat: coords[1],
-              lng: coords[0],
-              city: props.city || props.district,
-              state: props.state
-            }
-          })
-        }
-      }
-      setSuggestions([...localMatches, ...apiMatches])
-      setShowDropdown(true)
-    } catch (err) {
-      setSuggestions(localMatches)
-      setShowDropdown(localMatches.length > 0)
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  // Select Search Suggestion
-  const handleSelectSuggestion = (s: SearchSuggestion) => {
-    setSearchQuery(s.name)
-    setShowDropdown(false)
-    setSuggestions([])
-
-    if (mapInstanceRef.current && markerRef.current) {
-      mapInstanceRef.current.flyTo([s.lat, s.lng], 17, { animate: true, duration: 1.2 })
-      markerRef.current.setLatLng([s.lat, s.lng])
-      onLocationSelect(s.name, s.lat, s.lng)
     }
   }
 
@@ -319,45 +230,18 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
 
   return (
     <div className="w-full space-y-3">
-      {/* Live Autocomplete Search Bar & Locate Me GPS Button */}
-      <div className="flex flex-col sm:flex-row gap-2 relative z-20">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-            placeholder="Type street, landmark, or shop name to search..."
-            className="w-full pro-input pl-9 pr-8 text-xs font-medium"
-          />
-          {searching && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-red-800 absolute right-3 top-3" />
-          )}
-
-          {/* Autocomplete Predictive Dropdown */}
-          {showDropdown && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 max-h-60 overflow-y-auto">
-              {suggestions.map((s, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectSuggestion(s)}
-                  className="w-full text-left px-3.5 py-2 hover:bg-red-50/70 text-xs text-slate-700 flex items-start gap-2 border-b border-slate-100 last:border-0 cursor-pointer"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-red-800 shrink-0 mt-0.5" />
-                  <span className="truncate font-medium">{s.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Map Header Action Bar with Locate Me GPS Button */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+          <MapPin className="w-4 h-4 text-red-800 shrink-0" />
+          <span>Select Delivery Location on Map</span>
         </div>
 
         <button
           type="button"
           onClick={handleLocateMe}
           disabled={locating}
-          className="py-2 px-3.5 rounded-xl bg-red-800 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+          className="py-1.5 px-3 rounded-xl bg-red-800 hover:bg-red-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
         >
           {locating ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -374,7 +258,7 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         </div>
       )}
 
-      {/* Map Canvas */}
+      {/* Interactive Map Canvas */}
       <div
         ref={mapContainerRef}
         className="w-full h-64 rounded-2xl border-2 border-slate-200 shadow-inner z-10 overflow-hidden relative"
@@ -382,7 +266,7 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       ></div>
 
       <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
-        <span>📍 Google Maps layer active with all landmarks & shop POIs. Tap map or drag marker.</span>
+        <span>📍 Drag the red pin or tap anywhere on the map to set your exact location.</span>
       </p>
     </div>
   )
