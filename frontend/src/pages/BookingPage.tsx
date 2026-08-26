@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Header } from '../components/Header'
-import { LeafletMapPicker } from '../components/LeafletMapPicker'
+import { MapboxGLMapPicker } from '../components/MapboxGLMapPicker'
 import {
   fetchMeatRates,
   validateDraftBooking,
@@ -533,7 +533,7 @@ export const BookingPage: React.FC = () => {
                   <div className="space-y-4 pt-2">
                     {/* Interactive High-Accuracy Map Component */}
                     <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                      <LeafletMapPicker
+                      <MapboxGLMapPicker
                         onLocationSelect={(addr, lat, lng) => {
                           setDeliveryAddress(addr)
                           setCustomerLat(lat)

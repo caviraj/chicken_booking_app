@@ -74,12 +74,12 @@ def test_persistent_db_cache_lookup_expired():
 def test_calculate_delivery_charge_tertiary_haversine(mock_get_cache, mock_geocode):
     """Test Tertiary Fallback: Nominatim geocoding + Haversine * 1.35 multiplier."""
     mock_get_cache.return_value = None
-    # Geocode returns customer coords (~5km away)
-    mock_geocode.return_value = (13.0500, 80.2500)
+    # Geocode returns customer coords (~2km straight line -> ~2.7km road distance, Zone 2)
+    mock_geocode.return_value = (13.0680, 80.2600)
 
     mock_supabase = MagicMock()
     mock_zone_res = MagicMock()
-    mock_zone_res.data = [{"zone_name": "Zone B (5-10 km)", "delivery_charge": 50.0, "max_distance_km": 10.0}]
+    mock_zone_res.data = [{"zone_name": "Zone 2 (2-4 km)", "delivery_charge": 60.0, "max_distance_km": 4.0}]
 
     mock_table = MagicMock()
     mock_supabase.table.return_value = mock_table
@@ -97,6 +97,7 @@ def test_calculate_delivery_charge_tertiary_haversine(mock_get_cache, mock_geoco
         shop_lng=80.2707
     )
 
-    assert res["delivery_charge"] == 50.0
+    assert res["delivery_charge"] == 60.0
     assert res["provider"] == "haversine_nominatim_corrected"
     assert res["distance_km"] > 0
+

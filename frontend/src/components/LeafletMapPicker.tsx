@@ -27,6 +27,7 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const markerRef = useRef<any>(null)
+  const accuracyCircleRef = useRef<any>(null)
 
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -100,28 +101,24 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
           apiMatches = data.features.map((f: any) => {
             const props = f.properties || {}
             const coords = f.geometry?.coordinates || [0, 0]
-            const nameArr = [props.name, props.street, props.district, props.city, props.state].filter(Boolean)
+            const nameParts = [props.name, props.street, props.district || props.city || props.county, props.state]
+              .filter(Boolean)
+              .join(', ')
             return {
-              name: nameArr.join(', '),
+              name: nameParts || props.name || 'Location',
               lat: coords[1],
               lng: coords[0],
-              city: props.city,
-              state: props.state,
-              isLocal: false
+              city: props.city || props.district,
+              state: props.state
             }
           })
         }
       }
-
-      // Combine local pre-indexed places + API matches (deduplicated)
-      const combined = [...localMatches, ...apiMatches]
-      setSuggestions(combined)
+      setSuggestions([...localMatches, ...apiMatches])
       setShowDropdown(true)
     } catch (err) {
-      if (localMatches.length > 0) {
-        setSuggestions(localMatches)
-        setShowDropdown(true)
-      }
+      setSuggestions(localMatches)
+      setShowDropdown(localMatches.length > 0)
     } finally {
       setSearching(false)
     }
@@ -134,7 +131,7 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
     setSuggestions([])
 
     if (mapInstanceRef.current && markerRef.current) {
-      mapInstanceRef.current.flyTo([s.lat, s.lng], 16, { animate: true, duration: 1.2 })
+      mapInstanceRef.current.flyTo([s.lat, s.lng], 17, { animate: true, duration: 1.2 })
       markerRef.current.setLatLng([s.lat, s.lng])
       onLocationSelect(s.name, s.lat, s.lng)
     }
@@ -151,12 +148,27 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords
+        const { latitude, longitude, accuracy } = position.coords
         setLocating(false)
 
         if (mapInstanceRef.current && markerRef.current) {
-          mapInstanceRef.current.flyTo([latitude, longitude], 16, { animate: true, duration: 1.2 })
+          mapInstanceRef.current.flyTo([latitude, longitude], 17, { animate: true, duration: 1.2 })
           markerRef.current.setLatLng([latitude, longitude])
+
+          // Draw/update GPS accuracy circle
+          if (accuracyCircleRef.current) {
+            mapInstanceRef.current.removeLayer(accuracyCircleRef.current)
+          }
+          if (accuracy && accuracy < 5000 && typeof L !== 'undefined') {
+            accuracyCircleRef.current = L.circle([latitude, longitude], {
+              radius: accuracy,
+              color: '#2563eb',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.12,
+              weight: 1.5
+            }).addTo(mapInstanceRef.current)
+          }
+
           reverseGeocode(latitude, longitude)
         }
       },
@@ -292,6 +304,10 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
         marker.setLatLng([lat, lng])
         reverseGeocode(lat, lng)
       })
+      // Automatically trigger GPS Auto-Locate on map load
+      setTimeout(() => {
+        handleLocateMe()
+      }, 500)
     }
 
     return () => {
