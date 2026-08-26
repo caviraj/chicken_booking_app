@@ -199,9 +199,20 @@ export const LoginPage: React.FC = () => {
 
             {/* Status alerts */}
             {errorMsg && (
-              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-800 text-xs font-medium">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{errorMsg}</span>
+              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start justify-between gap-2.5 text-red-800 text-xs font-medium">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{errorMsg}</span>
+                </div>
+                {tab === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
+                    className="text-[11px] font-extrabold text-red-900 underline hover:text-slate-900 transition-colors cursor-pointer shrink-0 ml-2"
+                  >
+                    {t('auth.forgotPassword') || 'Forgot Password?'}
+                  </button>
+                )}
               </div>
             )}
 
@@ -391,6 +402,18 @@ export const LoginPage: React.FC = () => {
                         className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
                       >
                         {t('auth.backToSignIn') || '← Back to Sign In'}
+                      </button>
+                    </div>
+                  )}
+
+                  {tab === 'signin' && (
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
+                        className="text-xs font-bold text-red-800 hover:text-red-900 underline cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <span>🔑 {t('auth.forgotPassword') || 'Forgot Password?'}</span>
                       </button>
                     </div>
                   )}
