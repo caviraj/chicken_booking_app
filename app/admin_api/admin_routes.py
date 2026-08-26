@@ -127,8 +127,8 @@ def get_admin_settings() -> Dict[str, Any]:
         default_settings = {
             "order_cutoff_time": "20:00",
             "daily_stock_limit_kg": 100.0,
-            "shop_latitude": 11.0342,
-            "shop_longitude": 77.5853,
+            "shop_latitude": 11.063738,
+            "shop_longitude": 77.794596,
             "is_cleaning_day": False,
             "cod_enabled": False
         }

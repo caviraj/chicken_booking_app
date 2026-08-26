@@ -21,8 +21,8 @@ interface SearchSuggestion {
 
 export const MapboxGLMapPicker: React.FC<MapboxGLMapPickerProps> = ({
   onLocationSelect,
-  initialLat = 11.0342, // Kolanthapalayam shop default
-  initialLng = 77.5853
+  initialLat = 11.063737820050445,
+  initialLng = 77.79459634396372
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)

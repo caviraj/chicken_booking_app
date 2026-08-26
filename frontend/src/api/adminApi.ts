@@ -124,8 +124,8 @@ export const fetchAdminSettings = async (): Promise<AdminSettings> => {
     return {
       order_cutoff_time: '20:00',
       daily_stock_limit_kg: 100,
-      shop_latitude: 13.0827,
-      shop_longitude: 80.2707,
+      shop_latitude: 11.063737820050445,
+      shop_longitude: 77.79459634396372,
       is_cleaning_day: false
     }
   }

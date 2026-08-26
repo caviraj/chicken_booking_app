@@ -202,12 +202,12 @@ def calculate_delivery_charge(
         try:
             settings_res = supabase.table("admin_settings").select("shop_latitude, shop_longitude").limit(1).execute()
             if settings_res.data and len(settings_res.data) > 0:
-                shop_lat = float(settings_res.data[0].get("shop_latitude") or 11.0342)
-                shop_lng = float(settings_res.data[0].get("shop_longitude") or 77.5853)
+                shop_lat = float(settings_res.data[0].get("shop_latitude") or 11.063738)
+                shop_lng = float(settings_res.data[0].get("shop_longitude") or 77.794596)
             else:
-                shop_lat, shop_lng = 11.0342, 77.5853
+                shop_lat, shop_lng = 11.063738, 77.794596
         except Exception:
-            shop_lat, shop_lng = 11.0342, 77.5853
+            shop_lat, shop_lng = 11.063738, 77.794596
 
     computed_dist: Optional[float] = None
     provider_used = ""

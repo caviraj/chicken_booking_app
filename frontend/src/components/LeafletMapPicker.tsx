@@ -11,8 +11,8 @@ interface LeafletMapPickerProps {
 
 export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
   onLocationSelect,
-  initialLat = 11.0342, // Kulathupalayam default
-  initialLng = 77.5853  // Tiruppur District default
+  initialLat = 11.063737820050445,
+  initialLng = 77.79459634396372
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
@@ -146,8 +146,8 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       }
       L.control.layers(baseMaps).addTo(map)
 
-      // --- Shop Marker: Kolanthapalayam Origin Point (11.0342, 77.5853) ---
-      const shopPos = [11.0342, 77.5853]
+      // --- Shop Marker: FreshMeat Shop Origin Point (11.063738, 77.794596) ---
+      const shopPos = [11.063737820050445, 77.79459634396372]
       const shopIcon = L.divIcon({
         className: 'custom-shop-marker',
         html: `<div style="background-color:#065f46;color:white;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(6,95,70,0.5);border:2.5px solid white;font-size:20px;">🏪</div>`,

@@ -9,6 +9,13 @@ export interface LocalPlace {
 // Pre-indexed local villages and landmarks around Kulathupalayam (Tiruppur / Erode District, TN)
 export const TIRUPPUR_ERODE_LOCAL_PLACES: LocalPlace[] = [
   {
+    name: 'FreshMeat Store, Main Shop',
+    lat: 11.063737820050445,
+    lng: 77.79459634396372,
+    category: 'Store / Shop Center',
+    district: 'Main Store'
+  },
+  {
     name: 'Kulanthaipalayam, Tiruppur District',
     lat: 11.0342,
     lng: 77.5853,

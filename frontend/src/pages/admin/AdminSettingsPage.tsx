@@ -12,8 +12,8 @@ export const AdminSettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<AdminSettings>({
     order_cutoff_time: '20:00',
     daily_stock_limit_kg: 100,
-    shop_latitude: 13.0827,
-    shop_longitude: 80.2707,
+    shop_latitude: 11.063737820050445,
+    shop_longitude: 77.79459634396372,
     is_cleaning_day: false
   })
 
@@ -54,8 +54,8 @@ export const AdminSettingsPage: React.FC = () => {
         admin_email: adminEmail,
         order_cutoff_time: settings.order_cutoff_time,
         daily_stock_limit_kg: Number(settings.daily_stock_limit_kg),
-        shop_latitude: Number(settings.shop_latitude || 13.0827),
-        shop_longitude: Number(settings.shop_longitude || 80.2707),
+        shop_latitude: Number(settings.shop_latitude || 11.063737820050445),
+        shop_longitude: Number(settings.shop_longitude || 77.79459634396372),
         is_cleaning_day: Boolean(settings.is_cleaning_day)
       })
 
