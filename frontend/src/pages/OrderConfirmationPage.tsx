@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Header } from '../components/Header'
 import { supabase } from '../lib/supabaseClient'
 import { CheckCircle2, Clock, ExternalLink, ShieldCheck, RefreshCw, AlertCircle, ShoppingBag } from 'lucide-react'
@@ -7,6 +8,7 @@ import { CheckCircle2, Clock, ExternalLink, ShieldCheck, RefreshCw, AlertCircle,
 export const OrderConfirmationPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
 
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -62,7 +64,7 @@ export const OrderConfirmationPage: React.FC = () => {
         {loading ? (
           <div className="pro-card p-8 text-center">
             <div className="w-10 h-10 border-4 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <span className="text-xs text-slate-500 font-bold">Loading order receipt...</span>
+            <span className="text-xs text-slate-500 font-bold">{t('orders.fetching') || 'Loading order receipt...'}</span>
           </div>
         ) : errorMsg ? (
           <div className="pro-card p-8 text-center">
@@ -73,7 +75,7 @@ export const OrderConfirmationPage: React.FC = () => {
               onClick={() => navigate('/booking')}
               className="py-2.5 px-5 rounded-xl btn-primary text-xs font-bold"
             >
-              Back to Booking
+              {t('orders.newBooking') || 'Back to Booking'}
             </button>
           </div>
         ) : (
@@ -90,32 +92,39 @@ export const OrderConfirmationPage: React.FC = () => {
             )}
 
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">
-              {order?.payment_status === 'paid' ? 'Payment Verified!' : 'Order Placed Successfully'}
+              {order?.payment_status === 'paid'
+                ? (t('booking.paymentVerified') || 'Payment Verified!')
+                : (t('booking.orderPlacedSuccessfully') || 'Order Placed Successfully')}
             </h2>
             <p className="text-xs text-slate-500 mb-6">
-              Delivery scheduled for <span className="font-bold text-slate-800">{order?.delivery_date}</span> ({order?.delivery_time_slot})
+              {t('booking.deliveryScheduledFor', { date: order?.delivery_date, slot: order?.delivery_time_slot }) ||
+                `Delivery scheduled for ${order?.delivery_date} (${order?.delivery_time_slot})`}
             </p>
 
             {/* Order Info Card */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-3 text-xs text-slate-700 mb-6">
               <div className="flex justify-between items-center pb-2.5 border-b border-slate-200">
-                <span className="text-slate-500">Order Reference:</span>
+                <span className="text-slate-500">{t('booking.orderReference') || 'Order Reference:'}</span>
                 <span className="font-mono font-extrabold text-red-800">{order?.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Meat Item & Weight:</span>
-                <span className="font-bold text-slate-900 capitalize">{order?.meat_type} ({order?.quantity_kg} kg)</span>
+                <span className="text-slate-500">{t('booking.meatItemWeight') || 'Meat Item & Weight:'}</span>
+                <span className="font-bold text-slate-900 capitalize">
+                  {t(`booking.${order?.meat_type}`) || order?.meat_type} ({order?.quantity_kg} {i18n.language === 'ta' ? 'கிலோ' : 'Kg'})
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Cutting Preparation:</span>
-                <span className="font-bold text-slate-900 capitalize">{order?.cutting_type}</span>
+                <span className="text-slate-500">{t('booking.cuttingPreparation') || 'Cutting Preparation:'}</span>
+                <span className="font-bold text-slate-900 capitalize">
+                  {t(`booking.${order?.cutting_type}`) || order?.cutting_type}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Total Amount:</span>
+                <span className="text-slate-500">{t('booking.totalAmount') || 'Total Amount:'}</span>
                 <span className="font-extrabold text-slate-900 text-sm">₹{order?.grand_total}</span>
               </div>
               <div className="flex justify-between items-center pt-2.5 border-t border-slate-200">
-                <span className="text-slate-500">Payment Status:</span>
+                <span className="text-slate-500">{t('booking.paymentStatus') || 'Payment Status:'}</span>
                 <span
                   className={`font-bold uppercase text-[10px] px-2.5 py-1 rounded-full ${
                     order?.payment_status === 'paid'
@@ -126,10 +135,10 @@ export const OrderConfirmationPage: React.FC = () => {
                   }`}
                 >
                   {order?.payment_status === 'paid'
-                    ? 'Paid via Razorpay'
+                    ? (t('orders.paid') || 'Paid via Razorpay')
                     : order?.payment_status === 'cod_pending'
-                    ? 'Cash on Delivery'
-                    : 'Pending Payment'}
+                    ? (t('orders.codPending') || 'Cash on Delivery')
+                    : (t('orders.pendingOnline') || 'Pending Payment')}
                 </span>
               </div>
             </div>
@@ -143,7 +152,7 @@ export const OrderConfirmationPage: React.FC = () => {
                   rel="noopener noreferrer"
                   className="w-full py-3 px-6 rounded-xl bg-red-800 hover:bg-red-600 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>Pay ₹{order?.grand_total} Now via Razorpay</span>
+                  <span>{t('booking.payNowRazorpay', { total: order?.grand_total }) || `Pay ₹${order?.grand_total} Now via Razorpay`}</span>
                   <ExternalLink className="w-4 h-4" />
                 </a>
               )}
@@ -155,7 +164,7 @@ export const OrderConfirmationPage: React.FC = () => {
                   className="flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Refresh Status</span>
+                  <span>{t('booking.refreshStatus') || 'Refresh Status'}</span>
                 </button>
 
                 <button
@@ -164,7 +173,7 @@ export const OrderConfirmationPage: React.FC = () => {
                   className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>View All Orders</span>
+                  <span>{t('booking.viewAllOrders') || 'View All Orders'}</span>
                 </button>
               </div>
             </div>
