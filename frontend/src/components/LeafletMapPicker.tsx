@@ -115,34 +115,34 @@ export const LeafletMapPicker: React.FC<LeafletMapPickerProps> = ({
       const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 15)
       mapInstanceRef.current = map
 
-      // 1. OpenStreetMap Standard HD Tiles (100% reliable, crisp colored roads and street labels)
-      const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      })
-
-      // 2. Google Maps Standard Tiles (contains ALL Google landmarks, businesses, shops, and street POIs)
-      const googleRoadmap = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: '&copy; Google Maps'
-      })
-
-      // 3. Google Maps Hybrid Satellite Tiles (with landmark labels)
+      // 1. Google Maps Hybrid Satellite Tiles (with landmark & street labels - DEFAULT)
       const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '&copy; Google Maps'
       })
 
-      // Add default vibrant OpenStreetMap layer
-      osmStandard.addTo(map)
+      // 2. OpenStreetMap Standard HD Tiles (100% reliable, crisp colored roads and street labels)
+      const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      })
+
+      // 3. Google Maps Standard Roadmap Tiles
+      const googleRoadmap = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+      })
+
+      // Add DEFAULT Google Hybrid Satellite layer
+      googleHybrid.addTo(map)
 
       // Layer control switcher for standard/satellite/carto
       const baseMaps = {
+        'Google Satellite (Default)': googleHybrid,
         'OpenStreetMap (Vibrant Streets)': osmStandard,
-        'Google Maps (Roadmap)': googleRoadmap,
-        'Google Satellite': googleHybrid
+        'Google Maps (Roadmap)': googleRoadmap
       }
       L.control.layers(baseMaps).addTo(map)
 
