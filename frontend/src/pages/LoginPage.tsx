@@ -199,20 +199,9 @@ export const LoginPage: React.FC = () => {
 
             {/* Status alerts */}
             {errorMsg && (
-              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start justify-between gap-2.5 text-red-800 text-xs font-medium">
-                <div className="flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{errorMsg}</span>
-                </div>
-                {tab === 'signin' && (
-                  <button
-                    type="button"
-                    onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className="text-[11px] font-extrabold text-red-900 underline hover:text-slate-900 transition-colors cursor-pointer shrink-0 ml-2"
-                  >
-                    {t('auth.forgotPassword') || 'Forgot Password?'}
-                  </button>
-                )}
+              <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-800 text-xs font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
               </div>
             )}
 
@@ -270,29 +259,29 @@ export const LoginPage: React.FC = () => {
             {isExpanded && (
               <div className="space-y-3.5 animate-in fade-in slide-in-from-top-2 duration-300">
                 {/* Tabs */}
-                <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
-                  <button
-                    type="button"
-                    onClick={() => { setTab('signin'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signin' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
-                  >
-                    {t('auth.signInTab') || 'Sign In'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setTab('signup'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signup' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
-                  >
-                    {t('auth.signUpTab') || 'Register'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                    className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'forgot' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
-                  >
-                    {t('auth.forgotPassword') || 'Forgot?'}
-                  </button>
-                </div>
+                {tab !== 'forgot' ? (
+                  <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
+                    <button
+                      type="button"
+                      onClick={() => { setTab('signin'); setErrorMsg(null); setSuccessMsg(null); }}
+                      className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signin' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
+                    >
+                      {t('auth.signInTab') || 'Sign In'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTab('signup'); setErrorMsg(null); setSuccessMsg(null); }}
+                      className={`py-1.5 rounded-lg transition-all cursor-pointer text-center ${tab === 'signup' ? 'bg-red-800 text-white shadow-xs' : 'hover:text-slate-900'}`}
+                    >
+                      {t('auth.signUpTab') || 'Register'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
+                    <h3 className="text-xs font-extrabold text-amber-900">{t('auth.resetPasswordTitle') || 'Reset Password'}</h3>
+                    <p className="text-[11px] text-amber-700 font-medium mt-0.5">{t('auth.resetPasswordSubtitle') || 'Enter your registered email to receive reset link'}</p>
+                  </div>
+                )}
 
                 <form onSubmit={handleEmailAuth} className="space-y-3">
                   {tab === 'signup' && (
@@ -302,14 +291,14 @@ export const LoginPage: React.FC = () => {
                           {t('auth.fullNameLabel') || 'Full Name'}
                         </label>
                         <div className="relative">
-                          <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                           <input
                             type="text"
                             required
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
                             placeholder={t('auth.fullNamePlaceholder') || 'Enter your name'}
-                            className="w-full pro-input pl-9 text-xs"
+                            className="w-full pro-input pro-input-has-icon text-xs"
                           />
                         </div>
                       </div>
@@ -319,13 +308,13 @@ export const LoginPage: React.FC = () => {
                           {t('auth.phoneNumberLabel') || 'Phone Number'}
                         </label>
                         <div className="relative">
-                          <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                           <input
                             type="tel"
                             value={phoneNumber}
                             onChange={(e) => setPhoneNumber(e.target.value)}
                             placeholder={t('auth.phoneNumberPlaceholder') || '+91 9876543210'}
-                            className="w-full pro-input pl-9 text-xs"
+                            className="w-full pro-input pro-input-has-icon text-xs"
                           />
                         </div>
                       </div>
@@ -337,14 +326,14 @@ export const LoginPage: React.FC = () => {
                       {t('auth.emailLabel') || 'Email Address'}
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder={t('auth.emailPlaceholder') || 'you@example.com'}
-                        className="w-full pro-input pl-9 text-xs"
+                        className="w-full pro-input pro-input-has-icon text-xs"
                       />
                     </div>
                   </div>
@@ -359,14 +348,14 @@ export const LoginPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                            className="text-[11px] font-bold text-red-800 hover:text-red-900 hover:underline cursor-pointer"
+                            className="text-[11px] font-extrabold text-red-800 hover:text-red-900 hover:underline cursor-pointer"
                           >
                             {t('auth.forgotPassword') || 'Forgot Password?'}
                           </button>
                         )}
                       </div>
                       <div className="relative">
-                        <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none z-10" />
                         <input
                           type="password"
                           required
@@ -374,7 +363,7 @@ export const LoginPage: React.FC = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder={t('auth.passwordPlaceholder') || '••••••••'}
-                          className="w-full pro-input pl-9 text-xs"
+                          className="w-full pro-input pro-input-has-icon text-xs"
                         />
                       </div>
                     </div>
@@ -402,18 +391,6 @@ export const LoginPage: React.FC = () => {
                         className="text-xs font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
                       >
                         {t('auth.backToSignIn') || '← Back to Sign In'}
-                      </button>
-                    </div>
-                  )}
-
-                  {tab === 'signin' && (
-                    <div className="text-center pt-1">
-                      <button
-                        type="button"
-                        onClick={() => { setTab('forgot'); setErrorMsg(null); setSuccessMsg(null); }}
-                        className="text-xs font-bold text-red-800 hover:text-red-900 underline cursor-pointer inline-flex items-center gap-1"
-                      >
-                        <span>🔑 {t('auth.forgotPassword') || 'Forgot Password?'}</span>
                       </button>
                     </div>
                   )}
